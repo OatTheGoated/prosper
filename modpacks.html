@@ -18,6 +18,12 @@
                 <li><a href="modpacks.html" class="active">Modpacks</a></li>
                 <li><a href="schematics.html">Schematics</a></li>
                 <li><a href="videos.html">Videos</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+
+                <!-- ⭐ Upload tab (admin only) -->
+                <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
+
+                <li><a href="login.html">Login</a></li>
             </ul>
         </div>
     </nav>
@@ -65,6 +71,31 @@ window.addEventListener("load", () => {
 });
 </script>
 
+<!-- ⭐ ADMIN VISIBILITY SCRIPT -->
+<script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const supabaseAdmin = createClient(
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+    );
+
+    async function applyAdminVisibility() {
+        const uploadTab = document.getElementById("uploadTab");
+
+        if (!uploadTab) return;
+
+        const { data: { user } } = await supabaseAdmin.auth.getUser();
+
+        if (!user || user.user_metadata?.role !== "admin") {
+            uploadTab.style.display = "none";
+        }
+    }
+
+    applyAdminVisibility();
+</script>
+
 </body>
 </html>
+
 
