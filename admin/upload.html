@@ -90,10 +90,13 @@
             return;
         }
 
-        // ⭐ Upload schematic file
-        const { error: schemErr } = await supabase.storage
+        // ⭐ Upload schematic file (new Supabase API)
+        const { data: schemData, error: schemErr } = await supabase.storage
             .from("schematics")
-            .upload(`public/${schemFile.name}`, schemFile, { upsert: true });
+            .upload(`public/${schemFile.name}`, schemFile, {
+                upsert: true,
+                contentType: schemFile.type || "application/octet-stream"
+            });
 
         if (schemErr) {
             alert("Error uploading schematic");
@@ -101,10 +104,13 @@
             return;
         }
 
-        // ⭐ Upload image file
-        const { error: imgErr } = await supabase.storage
+        // ⭐ Upload image file (new Supabase API)
+        const { data: imgData, error: imgErr } = await supabase.storage
             .from("images")
-            .upload(`public/${imageFile.name}`, imageFile, { upsert: true });
+            .upload(`public/${imageFile.name}`, imageFile, {
+                upsert: true,
+                contentType: imageFile.type || "image/webp"
+            });
 
         if (imgErr) {
             alert("Error uploading image");
