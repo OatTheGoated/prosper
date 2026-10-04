@@ -71,6 +71,25 @@
 </head>
 <body>
 
+<!-- ⭐ NAVBAR ADDED -->
+<nav class="navbar" style="background:#000; padding:10px 20px;">
+    <div class="container" style="display:flex; align-items:center; justify-content:space-between;">
+        <h1 class="logo pixel">⛏️ Prosper</h1>
+        <ul class="nav-links" style="list-style:none; display:flex; gap:20px; padding:0; margin:0;">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="modpacks.html">Modpacks</a></li>
+            <li><a href="schematics.html" class="active">Schematics</a></li>
+            <li><a href="videos.html">Videos</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+
+            <!-- ⭐ Upload tab (admin only) -->
+            <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
+
+            <li><a href="login.html">Login</a></li>
+        </ul>
+    </div>
+</nav>
+
 <h1>ProsperMC Schematics</h1>
 
 <div id="schemContainer" class="schem-grid"></div>
@@ -78,9 +97,10 @@
 <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
+    /* ⭐ Updated to your new Supabase project */
     const supabase = createClient(
-        "https://gthgxmyccwsygbopksgz.supabase.co",
-        "sb_publishable_rj-DwglUPiebIvlhWzoHhg_2632GYgW"
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
     );
 
     let currentUser = null;
@@ -108,17 +128,14 @@
 
         for (const s of schems) {
 
-            // ⭐ Get image URL
             const imageUrl = supabase.storage
                 .from("images")
                 .getPublicUrl(s.image).data.publicUrl;
 
-            // ⭐ Get schematic file URL
             const fileUrl = supabase.storage
                 .from("schematics")
                 .getPublicUrl(s.file).data.publicUrl;
 
-            // ⭐ Count likes
             const { count } = await supabase
                 .from("schematic_likes")
                 .select("*", { count: "exact", head: true })
@@ -142,8 +159,7 @@
                 </button>
             `;
 
-            // ⭐ Admin delete button
-            if (currentUser && currentUser.user_metadata.role === "admin") {
+            if (currentUser && currentUser.user_metadata?.role === "admin") {
                 const delBtn = document.createElement("button");
                 delBtn.className = "delete-btn";
                 delBtn.innerText = "🗑️ Delete Schematic";
@@ -175,20 +191,13 @@
         loadSchematics();
     }
 
-    // ⭐ ADMIN DELETE (DB + storage)
     async function deleteSchematic(s) {
         if (!confirm("Are you sure you want to delete this schematic?")) return;
 
-        // Delete image file
         await supabase.storage.from("images").remove([s.image]);
-
-        // Delete schematic file
         await supabase.storage.from("schematics").remove([s.file]);
 
-        // Delete DB row
         await supabase.from("schematics").delete().eq("id", s.id);
-
-        // Delete likes associated with this schematic
         await supabase.from("schematic_likes").delete().eq("schematic_id", s.id);
 
         alert("Schematic deleted.");
@@ -198,6 +207,31 @@
     loadSchematics();
 </script>
 
+<!-- ⭐ ADMIN VISIBILITY SCRIPT -->
+<script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const supabaseAdmin = createClient(
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+    );
+
+    async function applyAdminVisibility() {
+        const uploadTab = document.getElementById("uploadTab");
+
+        if (!uploadTab) return;
+
+        const { data: { user } } = await supabaseAdmin.auth.getUser();
+
+        if (!user || user.user_metadata?.role !== "admin") {
+            uploadTab.style.display = "none";
+        }
+    }
+
+    applyAdminVisibility();
+</script>
+
 </body>
 </html>
+
 
