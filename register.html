@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register – Prosper</title>
+    <link rel="stylesheet" href="./style.css?v=30">
+</head>
+
+<body>
+<div class="site">
+    <h1 class="pixel" style="text-align:center;">Create Account</h1>
+
+    <div class="form-box">
+        <input id="email" type="email" placeholder="Email">
+        <input id="password" type="password" placeholder="Password">
+        <input id="username" type="text" placeholder="Username">
+        <button onclick="register()">Register</button>
+        <p id="msg"></p>
+    </div>
+</div>
+
+<script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const supabase = createClient(
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+    );
+
+    async function register() {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const username = document.getElementById("username").value;
+        const msg = document.getElementById("msg");
+
+        msg.textContent = "Creating account...";
+
+        // Create user
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password
+        });
+
+        if (error) {
+            msg.textContent = error.message;
+            return;
+        }
+
+        const user = data.user;
+
+        // Insert profile row
+        const { error: profileError } = await supabase
+            .from("profiles")
+            .insert({
+                id: user.id,
+                username: username,
+                role: "user"
+            });
+
+        if (profileError) {
+            msg.textContent = profileError.message;
+            return;
+        }
+
+        msg.textContent = "Account created! Redirecting...";
+        setTimeout(() => {
+            window.location.href = "login.html";
+        }, 1500);
+    }
+</script>
+
+</body>
+</html>
