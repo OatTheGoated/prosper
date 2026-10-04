@@ -1,3 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login – Prosper</title>
+    <link rel="stylesheet" href="./style.css?v=30">
+</head>
+
+<body>
+<div class="site">
+    <h1 class="pixel" style="text-align:center;">Login</h1>
+
+    <div class="form-box">
+        <input id="email" type="email" placeholder="Email">
+        <input id="password" type="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p id="msg"></p>
+    </div>
+</div>
+
 <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
@@ -6,21 +26,12 @@
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
     );
 
-    const status = document.getElementById("status");
-    const loginBtn = document.getElementById("loginBtn");
+    async function login() {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const msg = document.getElementById("msg");
 
-    loginBtn.onclick = async () => {
-        const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value.trim();
-
-        if (!email || !password) {
-            status.textContent = "Enter an email and password.";
-            status.style.color = "#ff6b6b";
-            return;
-        }
-
-        status.textContent = "Logging in...";
-        status.style.color = "#00ff88";
+        msg.textContent = "Logging in...";
 
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
@@ -28,25 +39,17 @@
         });
 
         if (error) {
-            status.textContent = error.message;
-            status.style.color = "#ff6b6b";
+            msg.textContent = error.message;
             return;
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            status.textContent = "Unexpected error: no user returned.";
-            status.style.color = "#ff6b6b";
-            return;
-        }
-
-        const role = user.user_metadata?.role;
-
-        if (role === "admin") {
-            window.location.href = "/prosper/admin/upload.html";
-        } else {
-            window.location.href = "/prosper/dashboard.html";
-        }
-    };
+        msg.textContent = "Success! Redirecting...";
+        setTimeout(() => {
+            window.location.href = "dashboard.html";
+        }, 1500);
+    }
 </script>
+
+</body>
+</html>
+
