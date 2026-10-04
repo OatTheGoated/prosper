@@ -37,13 +37,14 @@
 
 </div>
 
-<!-- ⭐ FULL WORKING LOGIN SCRIPT -->
+<!-- ⭐ FIXED LOGIN SCRIPT -->
 <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
+    /* ⭐ UPDATED TO YOUR NEW DATABASE */
     const supabase = createClient(
-        "https://gthgxmyccwsygbopksgz.supabase.co",
-        "sb_publishable_rj-DwglUPiebIvlhWzoHhg_2632GYgW"
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
     );
 
     const status = document.getElementById("status");
@@ -74,13 +75,17 @@
             return;
         }
 
-        // ⭐ Set admin role so upload page works
-        await supabase.auth.updateUser({
-            data: { role: "admin" }
-        });
+        // ⭐ Get user info
+        const { data: { user } } = await supabase.auth.getUser();
 
-        // ⭐ Redirect to admin upload page
-        window.location.href = "/prosper/admin/upload.html";
+        if (!user) {
+            status.textContent = "Unexpected error: no user returned.";
+            status.style.color = "#ff6b6b";
+            return;
+        }
+
+        // ⭐ Redirect normal users
+        window.location.href = "/prosper/dashboard.html";
     };
 </script>
 
