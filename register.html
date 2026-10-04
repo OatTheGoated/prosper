@@ -1,5 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register – Prosper</title>
+    <link rel="stylesheet" href="./style.css?v=30">
+</head>
+
+<body>
+<div class="site">
+    <h1 class="pixel" style="text-align:center;">Create Account</h1>
+
+    <div class="form-box">
+        <input id="email" type="email" placeholder="Email">
+        <input id="password" type="password" placeholder="Password">
+        <input id="username" type="text" placeholder="Username">
+        <button onclick="register()">Register</button>
+        <p id="msg"></p>
+    </div>
+</div>
+
 <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
     const supabase = createClient(
         "https://pnkwqqapyoxadcpubpwb.supabase.co",
@@ -45,6 +66,9 @@
         }, 1500);
     }
 
-    // ⭐ FIX: expose function globally
+    // Make the function visible to the button
     window.register = register;
 </script>
+
+</body>
+</html>
