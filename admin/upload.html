@@ -45,16 +45,17 @@
 <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
+    /* ⭐ UPDATED TO YOUR NEW DATABASE */
     const supabase = createClient(
-        "https://gthgxmyccwsygbopksgz.supabase.co",
-        "sb_publishable_rj-DwglUPiebIvlhWzoHhg_2632GYgW"
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
     );
 
     // ⭐ ADMIN CHECK
     async function checkAdmin() {
         const { data: { user } } = await supabase.auth.getUser();
 
-        if (!user || user.user_metadata.role !== "admin") {
+        if (!user || user.user_metadata?.role !== "admin") {
             alert("Access denied");
             window.location.href = "/prosper/login.html";
             return null;
@@ -90,8 +91,8 @@
             return;
         }
 
-        // ⭐ Upload schematic file (new Supabase API)
-        const { data: schemData, error: schemErr } = await supabase.storage
+        // ⭐ Upload schematic file
+        const { error: schemErr } = await supabase.storage
             .from("schematics")
             .upload(`public/${schemFile.name}`, schemFile, {
                 upsert: true,
@@ -104,8 +105,8 @@
             return;
         }
 
-        // ⭐ Upload image file (new Supabase API)
-        const { data: imgData, error: imgErr } = await supabase.storage
+        // ⭐ Upload image file
+        const { error: imgErr } = await supabase.storage
             .from("images")
             .upload(`public/${imageFile.name}`, imageFile, {
                 upsert: true,
@@ -140,4 +141,5 @@
 
 </body>
 </html>
+
 
