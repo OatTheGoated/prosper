@@ -19,9 +19,10 @@
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
+  /* ⭐ UPDATED TO YOUR NEW DATABASE */
   const supabase = createClient(
-    "https://gthgxmyccwsygbopksgz.supabase.co",
-    "sb_publishable_rj-DwglUPiebIvlhWzoHhg_2632GYgW"
+    "https://pnkwqqapyoxadcpubpwb.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
   );
 
   document.getElementById("loginBtn").onclick = async () => {
@@ -52,8 +53,10 @@
       return;
     }
 
-    // ⭐ REDIRECT BASED ON ROLE
-    if (user.user_metadata.role === "admin") {
+    // ⭐ CHECK ROLE
+    const role = user.user_metadata?.role;
+
+    if (role === "admin") {
       window.location.href = "/prosper/admin/upload.html";
     } else {
       window.location.href = "/prosper/schematics.html";
