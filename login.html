@@ -13,7 +13,7 @@
     <div class="form-box">
         <input id="email" type="email" placeholder="Email">
         <input id="password" type="password" placeholder="Password">
-        <button onclick="login()">Login</button>
+        <button id="loginBtn">Login</button>
         <p id="msg"></p>
     </div>
 </div>
@@ -21,15 +21,21 @@
 <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
+    // Your real Supabase project URL + anon key
     const supabase = createClient(
         "https://pnkwqqapyoxadcpubpwb.supabase.co",
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
     );
 
     async function login() {
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
         const msg = document.getElementById("msg");
+
+        if (!email || !password) {
+            msg.textContent = "Please enter both email and password.";
+            return;
+        }
 
         msg.textContent = "Logging in...";
 
@@ -46,10 +52,11 @@
         msg.textContent = "Success! Redirecting...";
         setTimeout(() => {
             window.location.href = "dashboard.html";
-        }, 1500);
+        }, 1200);
     }
+
+    document.getElementById("loginBtn").addEventListener("click", login);
 </script>
 
 </body>
 </html>
-
