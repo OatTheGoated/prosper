@@ -47,31 +47,22 @@
 
 </div>
 
-<!-- ⭐ ADMIN UPLOAD SCRIPT -->
+<!-- ⭐ ADMIN UPLOAD SCRIPT (Supabase version) -->
 <script type="module">
-    import { auth, db, storage } from "../firebase-config.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    import {
-        onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+    // ⭐ Your Supabase project
+    const supabase = createClient(
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
+    );
 
-    import {
-        doc,
-        getDoc,
-        addDoc,
-        collection
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-
-    import {
-        ref,
-        uploadBytes,
-        getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
-
-    // ⭐ ADMIN CHECK
     let currentUser = null;
 
-    onAuthStateChanged(auth, async (user) => {
+    // ⭐ ADMIN CHECK
+    async function checkAdmin() {
+        const { data: { user } } = await supabase.auth.getUser();
+
         if (!user) {
             alert("You must be logged in.");
             window.location.href = "/prosper/login.html";
@@ -80,24 +71,14 @@
 
         currentUser = user;
 
-        // Load profile
-        const profileRef = doc(db, "profiles", user.uid);
-        const profileSnap = await getDoc(profileRef);
-
-        if (!profileSnap.exists()) {
-            alert("Profile not found.");
-            window.location.href = "/prosper/login.html";
-            return;
-        }
-
-        const profile = profileSnap.data();
-
-        if (profile.role !== "admin") {
+        if (user.user_metadata?.role !== "admin") {
             alert("Access denied — admin only.");
             window.location.href = "/prosper/login.html";
             return;
         }
-    });
+    }
+
+    await checkAdmin();
 
     // ⭐ UPLOAD BUTTON HANDLER
     document.getElementById("uploadBtn").onclick = async () => {
@@ -119,37 +100,48 @@
             return;
         }
 
-        // ⭐ Upload schematic file to Firebase Storage
-        const schemPath = `schematics/${Date.now()}_${schemFile.name}`;
-        const schemRef = ref(storage, schemPath);
+        // ⭐ Upload schematic file to Supabase Storage (bucket: schematics)
+        const schemPath = `public/${Date.now()}_${schemFile.name}`;
+        const { error: schemErr } = await supabase.storage
+            .from("schematics")
+            .upload(schemPath, schemFile, {
+                upsert: true,
+                contentType: schemFile.type || "application/octet-stream"
+            });
 
-        try {
-            await uploadBytes(schemRef, schemFile);
-        } catch (err) {
-            console.error(err);
+        if (schemErr) {
+            console.error(schemErr);
             alert("Error uploading schematic");
             return;
         }
 
-        const schemURL = await getDownloadURL(schemRef);
+        const schemURL = supabase.storage
+            .from("schematics")
+            .getPublicUrl(schemPath).data.publicUrl;
 
-        // ⭐ Upload image file to Firebase Storage
-        const imagePath = `images/${Date.now()}_${imageFile.name}`;
-        const imageRef = ref(storage, imagePath);
+        // ⭐ Upload image file to Supabase Storage (bucket: images)
+        const imagePath = `public/${Date.now()}_${imageFile.name}`;
+        const { error: imgErr } = await supabase.storage
+            .from("images")
+            .upload(imagePath, imageFile, {
+                upsert: true,
+                contentType: imageFile.type || "image/webp"
+            });
 
-        try {
-            await uploadBytes(imageRef, imageFile);
-        } catch (err) {
-            console.error(err);
+        if (imgErr) {
+            console.error(imgErr);
             alert("Error uploading image");
             return;
         }
 
-        const imageURL = await getDownloadURL(imageRef);
+        const imageURL = supabase.storage
+            .from("images")
+            .getPublicUrl(imagePath).data.publicUrl;
 
-        // ⭐ Insert metadata into Firestore
-        try {
-            await addDoc(collection(db, "schematics"), {
+        // ⭐ Insert metadata into Supabase table "schematics"
+        const { error: dbErr } = await supabase
+            .from("schematics")
+            .insert({
                 name,
                 description,
                 tags: tags.split(",").map(t => t.trim()),
@@ -158,8 +150,9 @@
                 uploaded_by: currentUser.email,
                 uploaded_at: Date.now()
             });
-        } catch (err) {
-            console.error(err);
+
+        if (dbErr) {
+            console.error(dbErr);
             alert("Error saving metadata");
             return;
         }
@@ -170,34 +163,27 @@
 
 <!-- ⭐ ADMIN VISIBILITY SCRIPT -->
 <script type="module">
-    import { auth, db } from "../firebase-config.js";
-    import {
-        onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-    import {
-        doc,
-        getDoc
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    onAuthStateChanged(auth, async (user) => {
+    const supabase = createClient(
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
+    );
+
+    async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
         if (!uploadTab) return;
 
-        if (!user) {
-            uploadTab.style.display = "none";
-            return;
-        }
+        const { data: { user } } = await supabase.auth.getUser();
 
-        const profileRef = doc(db, "profiles", user.uid);
-        const profileSnap = await getDoc(profileRef);
-
-        if (!profileSnap.exists() || profileSnap.data().role !== "admin") {
+        if (!user || user.user_metadata?.role !== "admin") {
             uploadTab.style.display = "none";
         }
-    });
+    }
+
+    applyAdminVisibility();
 </script>
 
 </body>
 </html>
-
 
