@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <title>Login – Prosper</title>
     <link rel="stylesheet" href="./style.css?v=30">
+
+    <!-- Supabase JS (UMD version — works on GitHub Pages) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
+
+        // ⭐ Use "client" instead of "supabase" to avoid global conflicts
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
 </head>
 
 <body>
@@ -18,16 +29,7 @@
     </div>
 </div>
 
-<!-- ⭐ Supabase Login Script -->
-<script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    // ⭐ Your real Supabase project
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
-    );
-
+<script>
     const emailInput = document.getElementById("email");
     const passwordInput = document.getElementById("password");
     const loginBtn = document.getElementById("loginBtn");
@@ -44,24 +46,30 @@
 
         msg.textContent = "Logging in...";
 
-        // ⭐ Supabase login
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
+        try {
+            // ⭐ Supabase login
+            const { data, error } = await client.auth.signInWithPassword({
+                email,
+                password
+            });
 
-        if (error) {
-            msg.textContent = error.message;
-            return;
+            if (error) {
+                msg.textContent = error.message;
+                return;
+            }
+
+            msg.textContent = "Success! Redirecting...";
+            setTimeout(() => {
+                window.location.href = "dashboard.html";
+            }, 1200);
+
+        } catch (err) {
+            msg.textContent = "Unexpected error: " + err.message;
         }
-
-        msg.textContent = "Success! Redirecting...";
-        setTimeout(() => {
-            window.location.href = "dashboard.html";
-        }, 1200);
     });
 </script>
 
 </body>
 </html>
+
 
