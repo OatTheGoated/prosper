@@ -3,270 +3,347 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prosper Videos</title>
+<title>Videos - Prosper</title>
 
 <style>
+    body {
+        background-color: #0a0a0a;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
 
-/* -------------------- GLOBAL -------------------- */
+    h1.pixel {
+        font-size: 2.8rem;
+        background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-top: 2rem;
+    }
 
-body {
-    background-color: #0d0d0d;
-    color: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 0;
-    padding: 0;
-}
+    /* CATEGORY HUB */
+    #categoryHub {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 3rem;
+        padding: 3rem 1rem;
+        transition: opacity 0.5s ease;
+    }
 
-h1.pixel {
-    font-size: 48px;
-    margin-top: 40px;
-    color: #d4af37;
-    text-shadow: 0 0 10px rgba(212,175,55,0.6);
-}
+    .category-card {
+        width: 420px;
+        height: 260px;
+        background: #111;
+        border-radius: 20px;
+        border: 5px solid transparent;
+        background-image: linear-gradient(#111, #111),
+            linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        background-origin: border-box;
+        background-clip: content-box, border-box;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2.3rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
 
-p {
-    font-size: 18px;
-    margin-bottom: 20px;
-}
+    .category-card:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 45px #C9A227;
+    }
 
-/* Fade-in animation */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+    /* INSIDE VIEW */
+    #insideView {
+        display: none;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        padding: 2rem;
+    }
 
-/* -------------------- BANNER -------------------- */
+    #backBtn {
+        font-size: 1.4rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        color: #E8C547;
+        text-align: left;
+        width: 90%;
+        margin-left: auto;
+        margin-right: auto;
+    }
 
-.banner-container {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin: 30px 0 20px 0;
-    animation: fadeIn 0.8s ease-in-out;
-}
+    .section-title {
+        font-size: 2.2rem;
+        margin: 1rem 0;
+        background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 
-.banner-image {
-    width: 100%;
-    max-width: 1200px;
-    border: 3px solid #d4af37;
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgba(212,175,55,0.4);
-}
+    /* SLIDER */
+    .slider-container {
+        margin-bottom: 3rem;
+    }
 
-/* -------------------- CATEGORY CARDS -------------------- */
+    .slider {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        padding: 1rem 0;
+        overflow-x: auto;
+    }
 
-.category-card {
-    background-color: #1a1a1a;
-    border: 3px solid #d4af37;
-    border-radius: 12px;
-    padding: 25px;
-    margin: 40px auto;
-    width: 90%;
-    max-width: 1200px;
-    box-shadow: 0 0 20px rgba(212,175,55,0.3);
-    animation: fadeIn 0.8s ease-in-out;
-}
+    .slider::-webkit-scrollbar {
+        display: none;
+    }
 
-.category-card h2 {
-    font-size: 32px;
-    color: #d4af37;
-    margin-bottom: 20px;
-}
+    /* VIDEO CARDS */
+    .video-card {
+        min-width: 360px;
+        background: #111;
+        border-radius: 16px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 4px solid transparent;
+        background-image: linear-gradient(#111, #111),
+            linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        background-origin: border-box;
+        background-clip: content-box, border-box;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
 
-/* -------------------- VIDEO GRID -------------------- */
+    .video-card:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 35px #C9A227;
+    }
 
-.video-row {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 25px;
-    margin-top: 20px;
-}
+    .video-thumb {
+        width: 100%;
+        height: 240px;
+        object-fit: cover;
+    }
 
-.video-card {
-    background-color: #111;
-    border: 2px solid #d4af37;
-    border-radius: 10px;
-    width: 360px;
-    padding: 15px;
-    box-shadow: 0 0 15px rgba(212,175,55,0.3);
-    transition: transform 0.3s ease;
-}
+    .video-info {
+        padding: 1rem;
+    }
 
-.video-card:hover {
-    transform: scale(1.03);
-}
+    .video-title {
+        font-size: 1.4rem;
+        font-weight: bold;
+        background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 
-.video-card iframe {
-    width: 100%;
-    height: 200px;
-    border-radius: 10px;
-}
+    .video-creator {
+        font-size: 1.1rem;
+        color: #ccc;
+    }
 
-.creator-name {
-    margin-top: 10px;
-    font-size: 18px;
-    color: #d4af37;
-    font-weight: bold;
-}
+    /* MODAL */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
 
-.video-title {
-    font-size: 16px;
-    margin-top: 5px;
-    color: #ccc;
-}
+    .modal-content {
+        background: #111;
+        padding: 1rem;
+        border-radius: 10px;
+        max-width: 900px;
+        width: 90%;
+        border: 2px solid #E8C547;
+    }
 
+    .modal-close {
+        float: right;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #E8C547;
+    }
+
+    iframe {
+        width: 100%;
+        height: 500px;
+        border: none;
+    }
 </style>
 </head>
+
 <body>
 
-<!-- -------------------- PAGE TITLE -------------------- -->
-
 <h1 class="pixel">📺 Prosper Videos</h1>
-<p>Watch content from some of our Creators!</p>
 
-<!-- -------------------- COBBLEMON BANNER -------------------- -->
-
-<div class="banner-container">
-    <img src="https://cdn.discordapp.com/attachments/1317533881293078590/1556716451119890522/cobblemonbanner.png"
-         alt="Cobblemon Banner"
-         class="banner-image">
+<!-- CATEGORY HUB -->
+<div id="categoryHub">
+    <div class="category-card" onclick="openCategory('crazycraft')">CrazyCraft</div>
+    <div class="category-card" onclick="openCategory('cobblemon')">Cobblemon</div>
+    <div class="category-card" onclick="openCategory('tutorials')">Tutorials</div>
 </div>
 
-<!-- -------------------- CRAZYCRAFT SECTION -------------------- -->
+<!-- INSIDE VIEW -->
+<div id="insideView">
+    <div id="backBtn" onclick="goBack()">← Back</div>
+    <h2 id="insideTitle" class="section-title"></h2>
+    <div id="insideContent"></div>
+</div>
 
-<div class="category-card">
-    <h2>CrazyCraft</h2>
-
-    <div class="video-row">
-
-        <!-- OAT EP 1 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/SCqH3f3Eyws" allowfullscreen></iframe>
-            <div class="creator-name">OatTheGoat</div>
-            <div class="video-title">Episode 1</div>
-        </div>
-
-        <!-- CROWQE EP 1 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/8QQS7HjOJIE" allowfullscreen></iframe>
-            <div class="creator-name">Crowqe</div>
-            <div class="video-title">Episode 1</div>
-        </div>
-
-        <!-- CLUCK EP 1 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/UUsDq20GAoQ" allowfullscreen></iframe>
-            <div class="creator-name">Cluck</div>
-            <div class="video-title">Episode 1</div>
-        </div>
-
-        <!-- OAT EP 2 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/1NkML6ljVF4" allowfullscreen></iframe>
-            <div class="creator-name">OatTheGoat</div>
-            <div class="video-title">Episode 2</div>
-        </div>
-
-        <!-- CROWQE EP 2 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/VljkxVIGYRk" allowfullscreen></iframe>
-            <div class="creator-name">Crowqe</div>
-            <div class="video-title">Episode 2</div>
-        </div>
-
-        <!-- CLUCK EP 2 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/d3cXOOWj1-A" allowfullscreen></iframe>
-            <div class="creator-name">Cluck</div>
-            <div class="video-title">Episode 2</div>
-        </div>
-
-        <!-- OAT EP 3 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/j-6P1al5CCs" allowfullscreen></iframe>
-            <div class="creator-name">OatTheGoat</div>
-            <div class="video-title">Episode 3</div>
-        </div>
-
-        <!-- CROWQE EP 3 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/uUODDSPJ-2g" allowfullscreen></iframe>
-            <div class="creator-name">Crowqe</div>
-            <div class="video-title">Episode 3</div>
-        </div>
-
-        <!-- CLUCK EP 3 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/V96iGVNEP1w" allowfullscreen></iframe>
-            <div class="creator-name">Cluck</div>
-            <div class="video-title">Episode 3</div>
-        </div>
-
-        <!-- OAT EP 4 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/8to_n6dYBcU" allowfullscreen></iframe>
-            <div class="creator-name">OatTheGoat</div>
-            <div class="video-title">Episode 4</div>
-        </div>
-
+<!-- MODAL -->
+<div id="videoModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">✖</span>
+        <iframe id="videoFrame" src="" allowfullscreen></iframe>
     </div>
 </div>
 
-<!-- -------------------- COBBLEMON SECTION -------------------- -->
+<script>
+/* FINAL VIDEO DATA WITH CORRECT TITLES */
+const crazycraft = {
+    "OatTheGoat": [
+        {id:"SCqH3f3Eyws", title:"Crazy Craft Is Back!!!"},
+        {id:"1NkML6ljVF4", title:"Stolen Steal?"},
+        {id:"j-6P1al5CCs", title:"Hiding Items with My Eyes"},
+        {id:"8to_n6dYBcU", title:"Building Heaven's Kitchen"}
+    ],
+    "Crowqe": [
+        {id:"8QQS7HjOJIE", title:"I Joined a Minecraft SMP but its on Craft Craft..."},
+        {id:"VljkxVIGYRk", title:"Signal Shenanigans"},
+        {id:"uUODDSPJ-2g", title:"Valley Building"},
+        {id:"DKl8yx2ytXk", title:"Trees and conspiracies"}
+    ],
+    "Cluck": [
+        {id:"UUsDq20GAoQ", title:"I Built this in a cave!"},
+        {id:"d3cXOOWj1-A", title:"The Return Of Pickles!!"},
+        {id:"V96iGVNEP1w", title:"Upgrades, rats and Dragons"},
+        {id:"aymQOS31wY8", title:"I Revived Dinosaurs In Minecraft"}
+    ]
+};
 
-<div class="category-card">
-    <h2>Cobblemon</h2>
+const cobblemon = {
+    "OatTheGoat": [
+        {id:"V_iyvXQrhgg", title:"We just made the BEST Cobblemon experience"},
+        {id:"K043mMMi5Vw", title:"How I Became Cobblemon's Luckiest Player"},
+        {id:"-Cv7sl-uhMs", title:"How I Became Cobblemon's Unluckiest Player"},
+        {id:"XojOlNrDP4A", title:"I Built a Pub in Cobblemon And Got Way Too Drunk..."}
+    ],
+    "Crowqe": [
+        {id:"Ndlcw3Gfl_4", title:"I Joined the Cobblemonic Smp..."},
+        {id:"o0jfMdlmV6g", title:"Blood For The Mudkip"},
+        {id:"d4Rf41MRar4", title:"I Collected Every Berry In cobblemon"},
+        {id:"d4Rf41MRar4", title:"I Became A Police Officer On The Cobblemonic SMP..."}
+    ]
+};
 
-    <div class="video-row">
+const tutorials = {
+    "Prosper": [
+        {id:"ufkKoSTg-wA", title:"How To Make Your Own Custom Oak Trees"},
+        {id:"s50sal6owuY", title:"How To Make A Custom Willow Tree"}
+    ]
+};
 
-        <!-- OAT EP 1 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/-Cv7sl-uhMs" allowfullscreen></iframe>
-            <div class="creator-name">OatTheGoat</div>
-            <div class="video-title">Episode 1</div>
-        </div>
+/* PAGE SWITCHING */
+function openCategory(cat) {
+    const hub = document.getElementById("categoryHub");
+    const inside = document.getElementById("insideView");
 
-        <!-- CROWQE EP 1 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/d4Rf41MRar4" allowfullscreen></iframe>
-            <div class="creator-name">Crowqe</div>
-            <div class="video-title">Episode 1</div>
-        </div>
+    hub.style.opacity = 0;
 
-        <!-- OAT EP 2 -->
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/XojOlNrDP4A" allowfullscreen></iframe>
-            <div class="creator-name">OatTheGoat</div>
-            <div class="video-title">Episode 2</div>
-        </div>
+    setTimeout(() => {
+        hub.style.visibility = "hidden";
+        inside.style.visibility = "visible";
+        inside.style.display = "block";
+        setTimeout(() => inside.style.opacity = 1, 50);
+        loadCategory(cat);
+    }, 500);
+}
 
-    </div>
-</div>
+function goBack() {
+    const hub = document.getElementById("categoryHub");
+    const inside = document.getElementById("insideView");
 
-<!-- -------------------- TUTORIALS -------------------- -->
+    inside.style.opacity = 0;
 
-<div class="category-card">
-    <h2>Tutorials</h2>
+    setTimeout(() => {
+        inside.style.visibility = "hidden";
+        inside.style.display = "none";
+        hub.style.visibility = "visible";
+        setTimeout(() => hub.style.opacity = 1, 50);
+    }, 500);
+}
 
-    <div class="video-row">
+/* LOAD CATEGORY ROWS */
+function loadCategory(cat) {
+    const title = document.getElementById("insideTitle");
+    const content = document.getElementById("insideContent");
+    content.innerHTML = "";
 
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/ufkKoSTg-wA" allowfullscreen></iframe>
-            <div class="creator-name">OatTheGoat</div>
-            <div class="video-title">Tutorial 1</div>
-        </div>
+    if (cat === "crazycraft") {
+        title.innerText = "CrazyCraft";
+        renderCreatorRows(crazycraft, content);
+    }
+    if (cat === "cobblemon") {
+        title.innerText = "Cobblemon";
+        renderCreatorRows(cobblemon, content);
+    }
+    if (cat === "tutorials") {
+        title.innerText = "Tutorials";
+        renderCreatorRows(tutorials, content);
+    }
+}
 
-        <div class="video-card">
-            <iframe src="https://www.youtube.com/embed/s50sal6owuY" allowfullscreen></iframe>
-            <div class="creator-name">OatTheGoat</div>
-            <div class="video-title">Tutorial 2</div>
-        </div>
+/* CREATOR ROWS */
+function renderCreatorRows(data, container) {
+    Object.keys(data).forEach(creator => {
 
-    </div>
-</div>
+        const row = document.createElement("div");
+
+        row.innerHTML = `
+            <h3 class="section-title">${creator}</h3>
+            <div class="slider-container">
+                <div id="${creator}" class="slider"></div>
+            </div>
+        `;
+
+        container.appendChild(row);
+
+        const slider = document.getElementById(creator);
+
+        data[creator].forEach(video => {
+            const card = document.createElement("div");
+            card.className = "video-card";
+            card.onclick = () => openModal(video.id);
+
+            card.innerHTML = `
+                <img class="video-thumb" src="https://img.youtube.com/vi/${video.id}/maxresdefault.jpg">
+                <div class="video-info">
+                    <div class="video-title">${video.title}</div>
+                    <div class="video-creator">${creator}</div>
+                </div>
+            `;
+            slider.appendChild(card);
+        });
+    });
+}
+
+/* MODAL */
+function openModal(videoId) {
+    document.getElementById("videoModal").style.display = "flex";
+    document.getElementById("videoFrame").src = `https://www.youtube.com/embed/${videoId}`;
+}
+function closeModal() {
+    document.getElementById("videoModal").style.display = "none";
+    document.getElementById("videoFrame").src = "";
+}
+</script>
 
 </body>
 </html>
-
