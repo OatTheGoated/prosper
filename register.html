@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <title>Register – Prosper</title>
     <link rel="stylesheet" href="./style.css?v=30">
+
+    <!-- Supabase JS (UMD, works on GitHub Pages) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
 </head>
 
 <body>
@@ -14,23 +24,12 @@
         <input id="email" type="email" placeholder="Email">
         <input id="password" type="password" placeholder="Password">
         <input id="username" type="text" placeholder="Username">
-
-        <!-- ⭐ FIX: Prevent auto-refresh -->
         <button id="registerBtn" type="button">Register</button>
-
         <p id="msg"></p>
     </div>
 </div>
 
-<script type="module">
-    import { auth, db } from "./firebase-config.js";
-    import { createUserWithEmailAndPassword }
-        from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-    import {
-        doc,
-        setDoc
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-
+<script>
     const emailInput = document.getElementById("email");
     const passwordInput = document.getElementById("password");
     const usernameInput = document.getElementById("username");
@@ -50,16 +49,37 @@
         msg.textContent = "Creating account...";
 
         try {
-            // Create Firebase Auth user
-            const userCred = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCred.user;
-
-            // Save username + role in Firestore
-            await setDoc(doc(db, "profiles", user.uid), {
-                username: username,
-                email: email,
-                role: "user"
+            // Sign up user with Supabase Auth
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password
             });
+
+            if (error) {
+                msg.textContent = error.message;
+                return;
+            }
+
+            const user = data.user;
+            if (!user) {
+                msg.textContent = "Could not create user. Please try again.";
+                return;
+            }
+
+            // Insert profile row linked to auth user
+            const { error: profileError } = await supabase
+                .from("profiles")
+                .insert({
+                    id: user.id,
+                    username: username,
+                    email: email,
+                    role: "user"
+                });
+
+            if (profileError) {
+                msg.textContent = "Account created, but profile failed: " + profileError.message;
+                return;
+            }
 
             msg.textContent = "Account created! Redirecting...";
             setTimeout(() => {
@@ -67,7 +87,7 @@
             }, 1500);
 
         } catch (err) {
-            msg.textContent = err.message;
+            msg.textContent = "Unexpected error: " + err.message;
         }
     });
 </script>
