@@ -55,52 +55,53 @@
 
 </div>
 
-<!-- ⭐ DASHBOARD SCRIPT -->
+<!-- ⭐ DASHBOARD SCRIPT (Supabase version) -->
 <script type="module">
-    import { auth, db } from "./firebase-config.js";
-    import {
-        onAuthStateChanged,
-        signOut
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    import {
-        doc,
-        getDoc,
-        updateDoc
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+    // ⭐ Your Supabase project
+    const supabase = createClient(
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
+    );
 
-    // ⭐ Load dashboard data
-    onAuthStateChanged(auth, async (user) => {
+    async function loadDashboard() {
+        const { data: { user } } = await supabase.auth.getUser();
+
         if (!user) {
             window.location.href = "/prosper/login.html";
             return;
         }
 
+        // ⭐ Display basic info
         document.getElementById("emailDisplay").textContent = user.email;
-        document.getElementById("idDisplay").textContent = user.uid;
+        document.getElementById("idDisplay").textContent = user.id;
 
-        // Load profile from Firestore
-        const profileRef = doc(db, "profiles", user.uid);
-        const profileSnap = await getDoc(profileRef);
+        // ⭐ Load profile from Supabase table "profiles"
+        const { data: profileData, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle();
 
-        if (profileSnap.exists()) {
-            const profile = profileSnap.data();
-
+        if (profileData) {
             document.getElementById("usernameDisplay").textContent =
-                profile.username || "Unknown";
+                profileData.Username || "Unknown";
 
-            if (profile.pfp_url) {
-                document.getElementById("profilePic").src = profile.pfp_url;
+            if (profileData.pfp_url) {
+                document.getElementById("profilePic").src = profileData.pfp_url;
             }
 
             // ⭐ Admin visibility
-            if (profile.role !== "admin") {
+            if (user.user_metadata?.role !== "admin") {
                 document.getElementById("uploadTab").style.display = "none";
             }
         } else {
             document.getElementById("usernameDisplay").textContent = "Unknown";
         }
-    });
+    }
+
+    loadDashboard();
 
     // ⭐ Live preview of UUID avatar
     document.getElementById("mcUUID").addEventListener("input", () => {
@@ -119,7 +120,7 @@
             return;
         }
 
-        const user = auth.currentUser;
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             alert("You must be logged in.");
             return;
@@ -127,8 +128,15 @@
 
         const pfpURL = `https://crafatar.com/avatars/${uuid}?size=128&overlay`;
 
-        const profileRef = doc(db, "profiles", user.uid);
-        await updateDoc(profileRef, { pfp_url: pfpURL });
+        const { error } = await supabase
+            .from("profiles")
+            .update({ pfp_url: pfpURL })
+            .eq("id", user.id);
+
+        if (error) {
+            alert("Failed to update profile picture.");
+            return;
+        }
 
         document.getElementById("profilePic").src = pfpURL;
         alert("Profile picture updated!");
@@ -136,7 +144,7 @@
 
     // ⭐ Logout
     document.getElementById("logoutBtn").addEventListener("click", async () => {
-        await signOut(auth);
+        await supabase.auth.signOut();
         localStorage.clear();
         sessionStorage.clear();
         window.location.href = "/prosper/index.html";
@@ -145,4 +153,3 @@
 
 </body>
 </html>
-
