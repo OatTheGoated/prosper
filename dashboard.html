@@ -67,16 +67,21 @@
 
 <script>
     async function loadDashboard() {
-        const { data: { user } } = await client.auth.getUser();
+        // Use getSession() so metadata is always loaded
+        const { data: { session } } = await client.auth.getSession();
 
-        if (!user) {
+        if (!session) {
             window.location.href = "login.html";
             return;
         }
 
+        const user = session.user;
+
+        // Display basic info
         document.getElementById("emailDisplay").textContent = user.email;
         document.getElementById("idDisplay").textContent = user.id;
 
+        // Load profile table (username + pfp only)
         const { data: profile } = await client
             .from("profiles")
             .select("*")
@@ -89,15 +94,17 @@
             if (profile.pfp_url) {
                 document.getElementById("profilePic").src = profile.pfp_url;
             }
+        }
 
-            if (profile.role !== "admin") {
-                document.getElementById("uploadTab").style.display = "none";
-            }
+        // ⭐ Correct admin check using Supabase metadata
+        if (!user.user_metadata || user.user_metadata.role !== "admin") {
+            document.getElementById("uploadTab").style.display = "none";
         }
     }
 
     loadDashboard();
 
+    // UUID preview
     document.getElementById("mcUUID").addEventListener("input", () => {
         let uuid = document.getElementById("mcUUID").value.trim().replace(/-/g, "");
         if (uuid.length === 32) {
@@ -106,6 +113,7 @@
         }
     });
 
+    // Save profile picture
     document.getElementById("savePfpBtn").onclick = async () => {
         let uuid = document.getElementById("mcUUID").value.trim().replace(/-/g, "");
         if (uuid.length !== 32) {
@@ -113,9 +121,10 @@
             return;
         }
 
-        const { data: { user } } = await client.auth.getUser();
-        if (!user) return;
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) return;
 
+        const user = session.user;
         const pfpURL = `https://crafatar.com/avatars/${uuid}?size=128&overlay`;
 
         await client
@@ -127,6 +136,7 @@
         alert("Profile picture updated!");
     };
 
+    // Logout
     document.getElementById("logoutBtn").onclick = async () => {
         await client.auth.signOut();
         window.location.href = "index.html";
@@ -135,4 +145,5 @@
 
 </body>
 </html>
+
 
