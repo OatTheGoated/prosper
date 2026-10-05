@@ -12,7 +12,8 @@
         const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // ⭐ FIX: use "client" instead of "supabase"
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 </head>
 
@@ -49,8 +50,8 @@
         msg.textContent = "Creating account...";
 
         try {
-            // Sign up user with Supabase Auth
-            const { data, error } = await supabase.auth.signUp({
+            // ⭐ FIX: use client instead of supabase
+            const { data, error } = await client.auth.signUp({
                 email,
                 password
             });
@@ -66,8 +67,8 @@
                 return;
             }
 
-            // Insert profile row linked to auth user
-            const { error: profileError } = await supabase
+            // Insert profile row
+            const { error: profileError } = await client
                 .from("profiles")
                 .insert({
                     id: user.id,
