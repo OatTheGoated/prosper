@@ -5,15 +5,14 @@
     <title>Admin Upload – Prosper</title>
     <link rel="stylesheet" href="../style.css?v=22">
 
-    <!-- Supabase UMD (works on GitHub Pages) -->
+    <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
-
-        // ⭐ FIX: use "client" instead of "supabase"
-        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const client = supabase.createClient(
+            "https://pnkwqqapyoaxdcpubpwb.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        );
     </script>
 </head>
 
@@ -71,7 +70,6 @@
 
         currentUser = user;
 
-        // Load profile to check role
         const { data: profile } = await client
             .from("profiles")
             .select("role")
@@ -87,10 +85,10 @@
 
     checkAdmin();
 
-    // ⭐ UPLOAD BUTTON HANDLER
+    // ⭐ UPLOAD HANDLER
     document.getElementById("uploadBtn").onclick = async () => {
         if (!currentUser) {
-            alert("Session expired. Please log in again.");
+            alert("Session expired. Log in again.");
             window.location.href = "/prosper/login.html";
             return;
         }
@@ -102,12 +100,17 @@
         const schemFile = document.getElementById("schemFile").files[0];
         const imageFile = document.getElementById("imageFile").files[0];
 
-        if (!schemFile || !imageFile) {
-            alert("Missing files");
+        if (!name || !tags || !description) {
+            alert("Fill in all fields.");
             return;
         }
 
-        // ⭐ Upload schematic file
+        if (!schemFile || !imageFile) {
+            alert("Missing files.");
+            return;
+        }
+
+        // ⭐ Upload schematic
         const schemPath = `public/${Date.now()}_${schemFile.name}`;
         const { error: schemErr } = await client.storage
             .from("schematics")
@@ -118,7 +121,7 @@
 
         if (schemErr) {
             console.error(schemErr);
-            alert("Error uploading schematic");
+            alert("Error uploading schematic.");
             return;
         }
 
@@ -126,7 +129,7 @@
             .from("schematics")
             .getPublicUrl(schemPath).data.publicUrl;
 
-        // ⭐ Upload image file
+        // ⭐ Upload image
         const imagePath = `public/${Date.now()}_${imageFile.name}`;
         const { error: imgErr } = await client.storage
             .from("images")
@@ -137,7 +140,7 @@
 
         if (imgErr) {
             console.error(imgErr);
-            alert("Error uploading image");
+            alert("Error uploading image.");
             return;
         }
 
@@ -145,7 +148,7 @@
             .from("images")
             .getPublicUrl(imagePath).data.publicUrl;
 
-        // ⭐ Insert metadata into database
+        // ⭐ Insert metadata
         const { error: dbErr } = await client
             .from("schematics")
             .insert({
@@ -160,7 +163,7 @@
 
         if (dbErr) {
             console.error(dbErr);
-            alert("Error saving metadata");
+            alert("Error saving metadata.");
             return;
         }
 
@@ -170,8 +173,8 @@
     // ⭐ ADMIN VISIBILITY
     async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
-        const { data: { user } } = await client.auth.getUser();
 
+        const { data: { user } } = await client.auth.getUser();
         if (!user) {
             uploadTab.style.display = "none";
             return;
