@@ -5,12 +5,31 @@
     <title>ProsperMC Schematics</title>
 
     <style>
+        :root {
+            --bg: #111;
+            --card-bg: #1a1a1a;
+            --text: #fff;
+            --accent: #4CAF50;
+            --accent-red: #ff4444;
+            --accent-darkred: #aa0000;
+        }
+
+        body.light {
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text: #111;
+            --accent: #4CAF50;
+            --accent-red: #ff4444;
+            --accent-darkred: #aa0000;
+        }
+
         body {
-            background: #111;
-            color: #fff;
+            background: var(--bg);
+            color: var(--text);
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            transition: background 0.2s, color 0.2s;
         }
 
         h1 {
@@ -19,18 +38,90 @@
             font-size: 32px;
         }
 
+        .navbar {
+            background:#000;
+            padding:10px 20px;
+        }
+
+        .navbar .container {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+        }
+
+        .nav-links {
+            list-style:none;
+            display:flex;
+            gap:20px;
+            padding:0;
+            margin:0;
+        }
+
+        .nav-links a {
+            color:#fff;
+            text-decoration:none;
+        }
+
+        .nav-links a.active {
+            text-decoration:underline;
+        }
+
         .top-bar {
             display: flex;
             justify-content: center;
             gap: 10px;
             padding: 10px 20px;
+            flex-wrap: wrap;
         }
 
-        .top-bar input, .top-bar select {
+        .top-bar input, .top-bar select, .top-bar button {
             padding: 10px;
             border-radius: 6px;
             border: none;
             font-size: 15px;
+        }
+
+        .top-bar button {
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .featured {
+            padding: 10px 20px;
+        }
+
+        .featured-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 0 10px #000;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .featured-card img {
+            width: 200px;
+            border-radius: 8px;
+        }
+
+        .featured-card h2 {
+            margin: 0 0 5px 0;
+        }
+
+        .tag-badges {
+            margin-top: 5px;
+        }
+
+        .tag-badge {
+            display:inline-block;
+            padding:4px 8px;
+            border-radius:999px;
+            background:#333;
+            font-size:12px;
+            margin-right:4px;
+            margin-top:4px;
         }
 
         .schem-grid {
@@ -41,7 +132,7 @@
         }
 
         .schem-card {
-            background: #1a1a1a;
+            background: var(--card-bg);
             border-radius: 10px;
             padding: 15px;
             box-shadow: 0 0 10px #000;
@@ -66,7 +157,7 @@
             margin-top: 10px;
             padding: 10px;
             width: 100%;
-            background: #4CAF50;
+            background: var(--accent);
             border: none;
             border-radius: 6px;
             color: white;
@@ -75,11 +166,30 @@
         }
 
         .like-btn {
-            background: #ff4444 !important;
+            background: var(--accent-red) !important;
         }
 
         .delete-btn {
-            background: #aa0000 !important;
+            background: var(--accent-darkred) !important;
+        }
+
+        .pagination {
+            display:flex;
+            justify-content:center;
+            gap:10px;
+            padding:10px 0 20px;
+        }
+
+        .pagination button {
+            padding:6px 12px;
+            border-radius:6px;
+            border:none;
+            cursor:pointer;
+        }
+
+        .pagination button.active {
+            background:var(--accent);
+            color:#fff;
         }
     </style>
 
@@ -96,15 +206,17 @@
         let allSchems = [];
         let allLikes = [];
         let allProfiles = [];
+        let currentPage = 1;
+        const pageSize = 8;
     </script>
 </head>
 
 <body>
 
-<nav class="navbar" style="background:#000; padding:10px 20px;">
-    <div class="container" style="display:flex; align-items:center; justify-content:space-between;">
+<nav class="navbar">
+    <div class="container">
         <h1 class="logo pixel">⛏️ Prosper</h1>
-        <ul class="nav-links" style="list-style:none; display:flex; gap:20px; padding:0; margin:0;">
+        <ul class="nav-links">
             <li><a href="index.html">Home</a></li>
             <li><a href="modpacks.html">Modpacks</a></li>
             <li><a href="schematics.html" class="active">Schematics</a></li>
@@ -118,7 +230,7 @@
 
 <h1>ProsperMC Schematics</h1>
 
-<!-- ⭐ Search + Category + Author -->
+<!-- ⭐ Search + Category + Author + Sort + Theme -->
 <div class="top-bar">
     <input id="searchInput" placeholder="Search schematics...">
     <select id="categorySelect">
@@ -127,18 +239,29 @@
     <select id="authorSelect">
         <option value="">All Authors</option>
     </select>
+    <select id="sortSelect">
+        <option value="newest">Newest</option>
+        <option value="liked">Most Liked</option>
+        <option value="alpha">Alphabetical</option>
+    </select>
+    <button id="themeToggle">Toggle Theme</button>
+</div>
+
+<!-- ⭐ Featured schematic -->
+<div class="featured">
+    <div id="featuredCard" class="featured-card" style="display:none;"></div>
 </div>
 
 <div id="schemContainer" class="schem-grid"></div>
 
+<div class="pagination" id="pagination"></div>
+
 <script>
-    // ⭐ Load user
     async function loadUser() {
         const { data: { session } } = await client.auth.getSession();
         currentUser = session?.user || null;
     }
 
-    // ⭐ Load all data in parallel
     async function loadData() {
         const [schemRes, likeRes, profileRes] = await Promise.all([
             client.from("schematics").select("*").order("created_at", { ascending: false }),
@@ -151,13 +274,17 @@
         allProfiles = profileRes.data || [];
 
         populateFilters();
+        renderFeatured();
         renderSchematics();
+        renderPagination();
     }
 
-    // ⭐ Populate category + author filters
     function populateFilters() {
         const categorySelect = document.getElementById("categorySelect");
         const authorSelect = document.getElementById("authorSelect");
+
+        categorySelect.innerHTML = '<option value="">All Categories</option>';
+        authorSelect.innerHTML = '<option value="">All Authors</option>';
 
         const categories = new Set();
         const authors = new Set();
@@ -170,7 +297,6 @@
             if (profile) authors.add(profile.username);
         }
 
-        // Categories
         categories.forEach(cat => {
             const opt = document.createElement("option");
             opt.value = cat;
@@ -178,7 +304,6 @@
             categorySelect.appendChild(opt);
         });
 
-        // Authors
         authors.forEach(name => {
             const opt = document.createElement("option");
             opt.value = name;
@@ -187,16 +312,13 @@
         });
     }
 
-    // ⭐ Render schematics with filters + search
-    function renderSchematics() {
-        const container = document.getElementById("schemContainer");
-        container.innerHTML = "";
-
+    function getFilteredSortedSchems() {
         const search = document.getElementById("searchInput").value.toLowerCase();
         const category = document.getElementById("categorySelect").value;
         const author = document.getElementById("authorSelect").value;
+        const sort = document.getElementById("sortSelect").value;
 
-        const filtered = allSchems.filter(s => {
+        let filtered = allSchems.filter(s => {
             const profile = allProfiles.find(p => p.id === s.uploaded_by);
             const username = profile?.username || "Unknown";
 
@@ -214,7 +336,76 @@
             return matchesSearch && matchesCategory && matchesAuthor;
         });
 
-        for (const s of filtered) {
+        if (sort === "liked") {
+            filtered.sort((a, b) => {
+                const likesA = allLikes.filter(l => l.schematic_id === a.id).length;
+                const likesB = allLikes.filter(l => l.schematic_id === b.id).length;
+                return likesB - likesA;
+            });
+        } else if (sort === "alpha") {
+            filtered.sort((a, b) => a.name.localeCompare(b.name));
+        } else {
+            filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
+        return filtered;
+    }
+
+    function renderFeatured() {
+        const featuredCard = document.getElementById("featuredCard");
+        if (!allSchems.length) {
+            featuredCard.style.display = "none";
+            return;
+        }
+
+        let best = null;
+        let bestLikes = -1;
+
+        for (const s of allSchems) {
+            const likes = allLikes.filter(l => l.schematic_id === s.id).length;
+            if (likes > bestLikes) {
+                bestLikes = likes;
+                best = s;
+            }
+        }
+
+        if (!best) {
+            featuredCard.style.display = "none";
+            return;
+        }
+
+        const profile = allProfiles.find(p => p.id === best.uploaded_by);
+        const username = profile?.username || "Unknown";
+
+        featuredCard.style.display = "flex";
+        featuredCard.innerHTML = `
+            <img src="${best.image}" alt="${best.name}">
+            <div>
+                <h2>⭐ Featured: ${best.name}</h2>
+                <p>${best.description}</p>
+                <p><strong>Author:</strong> ${username}</p>
+                <div class="tag-badges">
+                    ${(Array.isArray(best.tags) ? best.tags : [])
+                        .map(t => `<span class="tag-badge">${t}</span>`).join("")}
+                </div>
+                <p><strong>Likes:</strong> ${bestLikes}</p>
+                <button onclick="window.location='${best.file}'">
+                    Download Schematic
+                </button>
+            </div>
+        `;
+    }
+
+    function renderSchematics() {
+        const container = document.getElementById("schemContainer");
+        container.innerHTML = "";
+
+        const filtered = getFilteredSortedSchems();
+
+        const start = (currentPage - 1) * pageSize;
+        const pageItems = filtered.slice(start, start + pageSize);
+
+        for (const s of pageItems) {
             const id = s.id;
 
             const likeCount = allLikes.filter(l => l.schematic_id === id).length;
@@ -229,8 +420,11 @@
                 <img src="${s.image}" alt="${s.name}">
                 <h3>${s.name}</h3>
                 <p>${s.description}</p>
-                <p><strong>Tags:</strong> ${Array.isArray(s.tags) ? s.tags.join(", ") : s.tags}</p>
                 <p><strong>Author:</strong> ${username}</p>
+                <div class="tag-badges">
+                    ${(Array.isArray(s.tags) ? s.tags : [])
+                        .map(t => `<span class="tag-badge">${t}</span>`).join("")}
+                </div>
 
                 <button onclick="window.location='${s.file}'">
                     Download Schematic
@@ -253,7 +447,28 @@
         }
     }
 
-    // ⭐ Like schematic (no duplicates)
+    function renderPagination() {
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+
+        const filtered = getFilteredSortedSchems();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement("button");
+            btn.textContent = i;
+            if (i === currentPage) btn.classList.add("active");
+            btn.onclick = () => {
+                currentPage = i;
+                renderSchematics();
+                renderPagination();
+            };
+            pagination.appendChild(btn);
+        }
+    }
+
     async function likeSchematic(id) {
         if (!currentUser) {
             alert("You must be logged in to like schematics.");
@@ -277,7 +492,6 @@
         await loadData();
     }
 
-    // ⭐ Delete schematic
     async function deleteSchematic(s) {
         if (!confirm("Are you sure you want to delete this schematic?")) return;
 
@@ -295,7 +509,6 @@
         await loadData();
     }
 
-    // ⭐ Admin visibility
     async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
         const { data: { session } } = await client.auth.getSession();
@@ -306,16 +519,41 @@
         }
     }
 
-    // ⭐ Initialize
+    function setupThemeToggle() {
+        const btn = document.getElementById("themeToggle");
+        btn.onclick = () => {
+            document.body.classList.toggle("light");
+        };
+    }
+
     async function init() {
         await loadUser();
         await new Promise(r => setTimeout(r, 200));
         await applyAdminVisibility();
         await loadData();
+        setupThemeToggle();
 
-        document.getElementById("searchInput").oninput = renderSchematics;
-        document.getElementById("categorySelect").onchange = renderSchematics;
-        document.getElementById("authorSelect").onchange = renderSchematics;
+        document.getElementById("searchInput").oninput = () => {
+            currentPage = 1;
+            renderSchematics();
+            renderPagination();
+        };
+        document.getElementById("categorySelect").onchange = () => {
+            currentPage = 1;
+            renderSchematics();
+            renderPagination();
+        };
+        document.getElementById("authorSelect").onchange = () => {
+            currentPage = 1;
+            renderSchematics();
+            renderPagination();
+        };
+        document.getElementById("sortSelect").onchange = () => {
+            currentPage = 1;
+            renderSchematics();
+            renderPagination();
+            renderFeatured();
+        };
     }
 
     init();
