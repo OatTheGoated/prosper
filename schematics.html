@@ -104,13 +104,11 @@
 <div id="schemContainer" class="schem-grid"></div>
 
 <script>
-    // ⭐ Load user
+    // ⭐ Load user using getSession()
     async function loadUser() {
-        const { data: { user } } = await client.auth.getUser();
-        currentUser = user;
+        const { data: { session } } = await client.auth.getSession();
+        currentUser = session?.user || null;
     }
-
-    loadUser();
 
     // ⭐ Load schematics
     async function loadSchematics() {
@@ -154,28 +152,18 @@
                 </button>
             `;
 
-            // ⭐ Admin delete button
-            if (currentUser) {
-                const { data: profile } = await client
-                    .from("profiles")
-                    .select("role")
-                    .eq("id", currentUser.id)
-                    .maybeSingle();
-
-                if (profile?.role === "admin") {
-                    const delBtn = document.createElement("button");
-                    delBtn.className = "delete-btn";
-                    delBtn.innerText = "🗑️ Delete Schematic";
-                    delBtn.onclick = () => deleteSchematic(s);
-                    card.appendChild(delBtn);
-                }
+            // ⭐ Admin delete button using metadata
+            if (currentUser?.user_metadata?.role === "admin") {
+                const delBtn = document.createElement("button");
+                delBtn.className = "delete-btn";
+                delBtn.innerText = "🗑️ Delete Schematic";
+                delBtn.onclick = () => deleteSchematic(s);
+                card.appendChild(delBtn);
             }
 
             container.appendChild(card);
         }
     }
-
-    loadSchematics();
 
     // ⭐ Like schematic
     async function likeSchematic(id) {
@@ -223,30 +211,28 @@
         loadSchematics();
     }
 
-    // ⭐ Admin visibility
+    // ⭐ Admin visibility using metadata
     async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
 
-        const { data: { user } } = await client.auth.getUser();
-        if (!user) {
-            uploadTab.style.display = "none";
-            return;
-        }
+        const { data: { session } } = await client.auth.getSession();
+        const user = session?.user;
 
-        const { data: profile } = await client
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
-
-        if (!profile || profile.role !== "admin") {
+        if (!user || user.user_metadata?.role !== "admin") {
             uploadTab.style.display = "none";
         }
     }
 
-    applyAdminVisibility();
+    // ⭐ Initialize page
+    async function init() {
+        await loadUser();
+        await new Promise(r => setTimeout(r, 200)); // wait for session restore
+        await applyAdminVisibility();
+        await loadSchematics();
+    }
+
+    init();
 </script>
 
 </body>
 </html>
-
