@@ -176,6 +176,21 @@
         height: 500px;
         border: none;
     }
+
+    /* BANNER */
+    .banner-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin: 20px 0 30px 0;
+    }
+
+    .banner-image {
+        width: 100%;
+        max-width: 1200px;
+        border: 4px solid #E8C547;
+        border-radius: 16px;
+    }
 </style>
 </head>
 
@@ -292,6 +307,16 @@ function loadCategory(cat) {
     }
     if (cat === "cobblemon") {
         title.innerText = "Cobblemon";
+
+        /* ⭐ INSERTED BANNER ⭐ */
+        content.innerHTML += `
+            <div class="banner-container">
+                <img class="banner-image"
+                     src="https://cdn.discordapp.com/attachments/1317533881293078590/1556716451119890522/cobblemonbanner.png"
+                     alt="Cobblemon Banner">
+            </div>
+        `;
+
         renderCreatorRows(cobblemon, content);
     }
     if (cat === "tutorials") {
