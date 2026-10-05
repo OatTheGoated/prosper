@@ -58,29 +58,26 @@
 <script>
     let currentUser = null;
 
-    // ⭐ ADMIN CHECK
+    // ⭐ ADMIN CHECK USING METADATA
     async function checkAdmin() {
-        const { data: { user } } = await client.auth.getUser();
+        const { data: { session } } = await client.auth.getSession();
 
-        if (!user) {
+        if (!session) {
             alert("You must be logged in.");
             window.location.href = "/prosper/login.html";
             return;
         }
 
-        currentUser = user;
+        const user = session.user;
 
-        const { data: profile } = await client
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
-
-        if (!profile || profile.role !== "admin") {
+        // ⭐ Check Supabase metadata
+        if (!user.user_metadata || user.user_metadata.role !== "admin") {
             alert("Access denied — admin only.");
             window.location.href = "/prosper/login.html";
             return;
         }
+
+        currentUser = user;
     }
 
     checkAdmin();
@@ -170,23 +167,19 @@
         alert("Upload complete!");
     };
 
-    // ⭐ ADMIN VISIBILITY
+    // ⭐ ADMIN VISIBILITY FIXED
     async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
 
-        const { data: { user } } = await client.auth.getUser();
-        if (!user) {
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
             uploadTab.style.display = "none";
             return;
         }
 
-        const { data: profile } = await client
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
+        const user = session.user;
 
-        if (!profile || profile.role !== "admin") {
+        if (!user.user_metadata || user.user_metadata.role !== "admin") {
             uploadTab.style.display = "none";
         }
     }
@@ -196,3 +189,4 @@
 
 </body>
 </html>
+
