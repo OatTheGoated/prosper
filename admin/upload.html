@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <title>Admin Upload – Prosper</title>
     <link rel="stylesheet" href="../style.css?v=22">
+
+    <!-- Supabase UMD (works on GitHub Pages) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
+
+        // ⭐ FIX: use "client" instead of "supabase"
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
 </head>
 
 <body>
@@ -19,9 +30,7 @@
                 <li><a href="/prosper/videos.html">Videos</a></li>
                 <li><a href="/prosper/dashboard.html">Dashboard</a></li>
 
-                <!-- ⭐ Upload tab (admin only) -->
                 <li><a href="/prosper/admin/upload.html" class="active" id="uploadTab">Upload</a></li>
-
                 <li><a href="/prosper/login.html">Login</a></li>
             </ul>
         </div>
@@ -47,21 +56,12 @@
 
 </div>
 
-<!-- ⭐ ADMIN UPLOAD SCRIPT (Supabase version) -->
-<script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    // ⭐ Your Supabase project
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
-    );
-
+<script>
     let currentUser = null;
 
     // ⭐ ADMIN CHECK
     async function checkAdmin() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await client.auth.getUser();
 
         if (!user) {
             alert("You must be logged in.");
@@ -71,14 +71,21 @@
 
         currentUser = user;
 
-        if (user.user_metadata?.role !== "admin") {
+        // Load profile to check role
+        const { data: profile } = await client
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (!profile || profile.role !== "admin") {
             alert("Access denied — admin only.");
             window.location.href = "/prosper/login.html";
             return;
         }
     }
 
-    await checkAdmin();
+    checkAdmin();
 
     // ⭐ UPLOAD BUTTON HANDLER
     document.getElementById("uploadBtn").onclick = async () => {
@@ -100,9 +107,9 @@
             return;
         }
 
-        // ⭐ Upload schematic file to Supabase Storage (bucket: schematics)
+        // ⭐ Upload schematic file
         const schemPath = `public/${Date.now()}_${schemFile.name}`;
-        const { error: schemErr } = await supabase.storage
+        const { error: schemErr } = await client.storage
             .from("schematics")
             .upload(schemPath, schemFile, {
                 upsert: true,
@@ -115,13 +122,13 @@
             return;
         }
 
-        const schemURL = supabase.storage
+        const schemURL = client.storage
             .from("schematics")
             .getPublicUrl(schemPath).data.publicUrl;
 
-        // ⭐ Upload image file to Supabase Storage (bucket: images)
+        // ⭐ Upload image file
         const imagePath = `public/${Date.now()}_${imageFile.name}`;
-        const { error: imgErr } = await supabase.storage
+        const { error: imgErr } = await client.storage
             .from("images")
             .upload(imagePath, imageFile, {
                 upsert: true,
@@ -134,12 +141,12 @@
             return;
         }
 
-        const imageURL = supabase.storage
+        const imageURL = client.storage
             .from("images")
             .getPublicUrl(imagePath).data.publicUrl;
 
-        // ⭐ Insert metadata into Supabase table "schematics"
-        const { error: dbErr } = await supabase
+        // ⭐ Insert metadata into database
+        const { error: dbErr } = await client
             .from("schematics")
             .insert({
                 name,
@@ -147,8 +154,8 @@
                 tags: tags.split(",").map(t => t.trim()),
                 file: schemURL,
                 image: imageURL,
-                uploaded_by: currentUser.email,
-                uploaded_at: Date.now()
+                uploaded_by: currentUser.id,
+                created_at: new Date().toISOString()
             });
 
         if (dbErr) {
@@ -159,24 +166,24 @@
 
         alert("Upload complete!");
     };
-</script>
 
-<!-- ⭐ ADMIN VISIBILITY SCRIPT -->
-<script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
-    );
-
+    // ⭐ ADMIN VISIBILITY
     async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
-        if (!uploadTab) return;
+        const { data: { user } } = await client.auth.getUser();
 
-        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            uploadTab.style.display = "none";
+            return;
+        }
 
-        if (!user || user.user_metadata?.role !== "admin") {
+        const { data: profile } = await client
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (!profile || profile.role !== "admin") {
             uploadTab.style.display = "none";
         }
     }
@@ -186,4 +193,3 @@
 
 </body>
 </html>
-
