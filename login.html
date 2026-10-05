@@ -18,10 +18,15 @@
     </div>
 </div>
 
+<!-- ⭐ Supabase Login Script -->
 <script type="module">
-    import { auth } from "./firebase-config.js";
-    import { signInWithEmailAndPassword }
-        from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    // ⭐ Your real Supabase project
+    const supabase = createClient(
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
+    );
 
     const emailInput = document.getElementById("email");
     const passwordInput = document.getElementById("password");
@@ -39,15 +44,21 @@
 
         msg.textContent = "Logging in...";
 
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            msg.textContent = "Success! Redirecting...";
-            setTimeout(() => {
-                window.location.href = "dashboard.html";
-            }, 1200);
-        } catch (err) {
-            msg.textContent = err.message;
+        // ⭐ Supabase login
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        if (error) {
+            msg.textContent = error.message;
+            return;
         }
+
+        msg.textContent = "Success! Redirecting...";
+        setTimeout(() => {
+            window.location.href = "dashboard.html";
+        }, 1200);
     });
 </script>
 
