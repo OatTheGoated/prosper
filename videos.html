@@ -208,6 +208,10 @@
 <!-- INSIDE VIEW -->
 <div id="insideView">
     <div id="backBtn" onclick="goBack()">← Back</div>
+
+    <!-- BANNER ABOVE TITLE -->
+    <div id="bannerSpot"></div>
+
     <h2 id="insideTitle" class="section-title"></h2>
     <div id="insideContent"></div>
 </div>
@@ -299,26 +303,31 @@ function goBack() {
 function loadCategory(cat) {
     const title = document.getElementById("insideTitle");
     const content = document.getElementById("insideContent");
+    const bannerSpot = document.getElementById("bannerSpot");
+
     content.innerHTML = "";
+    bannerSpot.innerHTML = "";
 
     if (cat === "crazycraft") {
         title.innerText = "CrazyCraft";
         renderCreatorRows(crazycraft, content);
     }
+
     if (cat === "cobblemon") {
         title.innerText = "Cobblemon";
 
-        /* ⭐ INSERTED BANNER ⭐ */
-        content.innerHTML += `
+        /* ⭐ BANNER ABOVE TITLE ⭐ */
+        bannerSpot.innerHTML = `
             <div class="banner-container">
                 <img class="banner-image"
-                     src="https://cdn.discordapp.com/attachments/1317533881293078590/1556716451119890522/cobblemonbanner.png"
+                     src="https://raw.githubusercontent.com/OatTheGoated/prosper/main/assests/cobblemonbanner.png"
                      alt="Cobblemon Banner">
             </div>
         `;
 
         renderCreatorRows(cobblemon, content);
     }
+
     if (cat === "tutorials") {
         title.innerText = "Tutorials";
         renderCreatorRows(tutorials, content);
