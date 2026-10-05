@@ -4,32 +4,82 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Videos - Prosper</title>
-<link rel="stylesheet" href="./style.css?v=23">
 
 <style>
     body {
         background-color: #0a0a0a;
         color: #fff;
         font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
     }
 
     h1.pixel {
-        color: #E8C547;
+        font-size: 2.5rem;
         background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        text-align: center;
+        margin-top: 2rem;
     }
 
-    /* SECTION TITLES */
+    /* CATEGORY HUB */
+    #categoryHub {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        padding: 3rem;
+        transition: opacity 0.5s ease;
+    }
+
+    .category-card {
+        width: 300px;
+        height: 180px;
+        background: #111;
+        border-radius: 12px;
+        border: 3px solid transparent;
+        background-image: linear-gradient(#111, #111), 
+            linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        background-origin: border-box;
+        background-clip: content-box, border-box;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.6rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .category-card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 25px #C9A227;
+    }
+
+    /* INSIDE VIEW */
+    #insideView {
+        display: none;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        padding: 2rem;
+    }
+
+    #backBtn {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        color: #E8C547;
+    }
+
     .section-title {
         font-size: 2rem;
-        margin: 2rem 0 1rem;
+        margin: 1rem 0;
         background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
 
-    /* SLIDER WRAPPER */
+    /* SLIDER */
     .slider-container {
         position: relative;
         margin-bottom: 3rem;
@@ -47,27 +97,28 @@
         display: none;
     }
 
-    /* VIDEO CARD */
     .video-card {
-        min-width: 280px;
+        min-width: 260px;
         background: #111;
         border-radius: 10px;
         overflow: hidden;
         cursor: pointer;
         border: 2px solid transparent;
-        transition: transform 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
-        position: relative;
+        background-image: linear-gradient(#111, #111),
+            linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        background-origin: border-box;
+        background-clip: content-box, border-box;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
     .video-card:hover {
         transform: scale(1.05);
-        border: 2px solid #E8C547;
         box-shadow: 0 0 20px #C9A227;
     }
 
     .video-thumb {
         width: 100%;
-        height: 160px;
+        height: 150px;
         object-fit: cover;
     }
 
@@ -101,17 +152,8 @@
         padding: 0 10px;
     }
 
-    .arrow-left {
-        left: 0;
-    }
-
-    .arrow-right {
-        right: 0;
-    }
-
-    .arrow:hover {
-        color: #fff;
-    }
+    .arrow-left { left: 0; }
+    .arrow-right { right: 0; }
 
     /* MODAL */
     .modal {
@@ -150,62 +192,21 @@
 
 <body>
 
-<div class="site">
+<h1 class="pixel">📺 Prosper Videos</h1>
 
-    <nav class="navbar">
-        <div class="container">
-            <h1 class="logo pixel">⛏️ Prosper</h1>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="modpacks.html">Modpacks</a></li>
-                <li><a href="schematics.html">Schematics</a></li>
-                <li><a href="videos.html" class="active">Videos</a></li>
-                <li><a href="dashboard.html">Dashboard</a></li>
-                <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
-                <li><a href="login.html">Login</a></li>
-            </ul>
-        </div>
-    </nav>
+<!-- CATEGORY HUB -->
+<div id="categoryHub">
+    <div class="category-card" onclick="openCategory('crazycraft')">CrazyCraft</div>
+    <div class="category-card" onclick="openCategory('cobblemon')">Cobblemon</div>
+    <div class="category-card" onclick="openCategory('tutorials')">Tutorials</div>
+</div>
 
-    <main>
-        <div class="container">
+<!-- INSIDE VIEW -->
+<div id="insideView">
+    <div id="backBtn" onclick="goBack()">← Back</div>
+    <h2 id="insideTitle" class="section-title"></h2>
 
-            <h1 class="pixel">📺 Videos & Tutorials</h1>
-
-            <!-- CRAZYCRAFT -->
-            <h2 class="section-title">CrazyCraft Series</h2>
-            <div class="slider-container">
-                <div class="arrow arrow-left" onclick="scrollLeft('crazycraft')">&#10094;</div>
-                <div class="arrow arrow-right" onclick="scrollRight('crazycraft')">&#10095;</div>
-
-                <div id="crazycraft" class="slider"></div>
-            </div>
-
-            <!-- COBBLEMON -->
-            <h2 class="section-title">Cobblemon Series</h2>
-            <div class="slider-container">
-                <div class="arrow arrow-left" onclick="scrollLeft('cobblemon')">&#10094;</div>
-                <div class="arrow arrow-right" onclick="scrollRight('cobblemon')">&#10095;</div>
-
-                <div id="cobblemon" class="slider"></div>
-            </div>
-
-            <!-- TUTORIALS -->
-            <h2 class="section-title">Tutorials</h2>
-            <div class="slider-container">
-                <div class="arrow arrow-left" onclick="scrollLeft('tutorials')">&#10094;</div>
-                <div class="arrow arrow-right" onclick="scrollRight('tutorials')">&#10095;</div>
-
-                <div id="tutorials" class="slider"></div>
-            </div>
-
-        </div>
-    </main>
-
-    <footer>
-        <p>&copy; 2026 Prosper. Made with ❤️ for Minecraft</p>
-    </footer>
-
+    <div id="insideContent"></div>
 </div>
 
 <!-- MODAL -->
@@ -217,74 +218,119 @@
 </div>
 
 <script>
-const crazycraftVideos = [
-    {title:"Oat Ep 1", creator:"Oat", url:"SCqH3f3Eyws"},
-    {title:"Oat Ep 2", creator:"Oat", url:"1NkML6ljVF4"},
-    {title:"Oat Ep 3", creator:"Oat", url:"j-6P1al5CCs"},
-    {title:"Oat Ep 4", creator:"Oat", url:"8to_n6dYBcU"},
+/* VIDEO DATA */
+const crazycraft = {
+    Oat: ["SCqH3f3Eyws","1NkML6ljVF4","j-6P1al5CCs","8to_n6dYBcU"],
+    Crowqe: ["8QQS7HjOJIE","VljkxVIGYRk","uUODDSPJ-2g","DKl8yx2ytXk"],
+    Cluck: ["UUsDq20GAoQ","d3cXOOWj1-A","V96iGVNEP1w","aymQOS31wY8"]
+};
 
-    {title:"Crowqe Ep 1", creator:"Crowqe", url:"8QQS7HjOJIE"},
-    {title:"Crowqe Ep 2", creator:"Crowqe", url:"VljkxVIGYRk"},
-    {title:"Crowqe Ep 3", creator:"Crowqe", url:"uUODDSPJ-2g"},
-    {title:"Crowqe Ep 4", creator:"Crowqe", url:"DKl8yx2ytXk"},
+const cobblemon = {
+    Oat: ["V_iyvXQrhgg","K043mMMi5Vw","-Cv7sl-uhMs","XojOlNrDP4A"],
+    Crowqe: ["Ndlcw3Gfl_4","o0jfMdlmV6g","d4Rf41MRar4"]
+};
 
-    {title:"Cluck Ep 1", creator:"Cluck", url:"UUsDq20GAoQ"},
-    {title:"Cluck Ep 2", creator:"Cluck", url:"d3cXOOWj1-A"},
-    {title:"Cluck Ep 3", creator:"Cluck", url:"V96iGVNEP1w"},
-    {title:"Cluck Ep 4", creator:"Cluck", url:"aymQOS31wY8"}
-];
+const tutorials = {
+    Prosper: ["ufkKoSTg-wA","s50sal6owuY"]
+};
 
-const cobblemonVideos = [
-    {title:"Oat Ep 1", creator:"Oat", url:"V_iyvXQrhgg"},
-    {title:"Oat Ep 2", creator:"Oat", url:"K043mMMi5Vw"},
-    {title:"Oat Ep 3", creator:"Oat", url:"-Cv7sl-uhMs"},
-    {title:"Oat Ep 4", creator:"Oat", url:"XojOlNrDP4A"},
+/* PAGE SWITCHING */
+function openCategory(cat) {
+    document.getElementById("categoryHub").style.opacity = 0;
 
-    {title:"Crowqe Ep 1", creator:"Crowqe", url:"Ndlcw3Gfl_4"},
-    {title:"Crowqe Ep 2", creator:"Crowqe", url:"o0jfMdlmV6g"},
-    {title:"Crowqe Ep 3", creator:"Crowqe", url:"d4Rf41MRar4"}
-];
+    setTimeout(() => {
+        document.getElementById("categoryHub").style.display = "none";
 
-const tutorialVideos = [
-    {title:"Tutorial 1", creator:"Prosper", url:"ufkKoSTg-wA"},
-    {title:"Tutorial 2", creator:"Prosper", url:"s50sal6owuY"}
-];
+        document.getElementById("insideView").style.display = "block";
+        setTimeout(() => {
+            document.getElementById("insideView").style.opacity = 1;
+        }, 50);
 
-function renderVideos(list, elementId) {
-    const container = document.getElementById(elementId);
-    list.forEach(v => {
-        const card = document.createElement("div");
-        card.className = "video-card";
-        card.onclick = () => openModal(v.url);
+        loadCategory(cat);
+    }, 500);
+}
 
-        card.innerHTML = `
-            <img class="video-thumb" src="https://img.youtube.com/vi/${v.url}/maxresdefault.jpg">
-            <div class="video-info">
-                <div class="video-title">${v.title}</div>
-                <div class="video-creator">${v.creator}</div>
+function goBack() {
+    document.getElementById("insideView").style.opacity = 0;
+
+    setTimeout(() => {
+        document.getElementById("insideView").style.display = "none";
+
+        document.getElementById("categoryHub").style.display = "flex";
+        setTimeout(() => {
+            document.getElementById("categoryHub").style.opacity = 1;
+        }, 50);
+    }, 500);
+}
+
+/* LOAD CATEGORY ROWS */
+function loadCategory(cat) {
+    const title = document.getElementById("insideTitle");
+    const content = document.getElementById("insideContent");
+    content.innerHTML = "";
+
+    if (cat === "crazycraft") {
+        title.innerText = "CrazyCraft";
+        renderCreatorRows(crazycraft, content);
+    }
+    if (cat === "cobblemon") {
+        title.innerText = "Cobblemon";
+        renderCreatorRows(cobblemon, content);
+    }
+    if (cat === "tutorials") {
+        title.innerText = "Tutorials";
+        renderCreatorRows(tutorials, content);
+    }
+}
+
+/* CREATOR ROWS */
+function renderCreatorRows(data, container) {
+    Object.keys(data).forEach(creator => {
+        const row = document.createElement("div");
+
+        row.innerHTML = `
+            <h3 class="section-title">${creator}</h3>
+            <div class="slider-container">
+                <div class="arrow arrow-left" onclick="scrollLeft('${creator}')">&#10094;</div>
+                <div class="arrow arrow-right" onclick="scrollRight('${creator}')">&#10095;</div>
+                <div id="${creator}" class="slider"></div>
             </div>
         `;
-        container.appendChild(card);
+
+        container.appendChild(row);
+
+        const slider = document.getElementById(creator);
+
+        data[creator].forEach(id => {
+            const card = document.createElement("div");
+            card.className = "video-card";
+            card.onclick = () => openModal(id);
+
+            card.innerHTML = `
+                <img class="video-thumb" src="https://img.youtube.com/vi/${id}/maxresdefault.jpg">
+                <div class="video-info">
+                    <div class="video-title">${creator} Video</div>
+                    <div class="video-creator">${creator}</div>
+                </div>
+            `;
+            slider.appendChild(card);
+        });
     });
 }
 
-renderVideos(crazycraftVideos, "crazycraft");
-renderVideos(cobblemonVideos, "cobblemon");
-renderVideos(tutorialVideos, "tutorials");
-
+/* SLIDER ARROWS */
 function scrollLeft(id) {
     document.getElementById(id).scrollLeft -= 300;
 }
-
 function scrollRight(id) {
     document.getElementById(id).scrollLeft += 300;
 }
 
+/* MODAL */
 function openModal(videoId) {
     document.getElementById("videoModal").style.display = "flex";
     document.getElementById("videoFrame").src = `https://www.youtube.com/embed/${videoId}`;
 }
-
 function closeModal() {
     document.getElementById("videoModal").style.display = "none";
     document.getElementById("videoFrame").src = "";
@@ -293,4 +339,5 @@ function closeModal() {
 
 </body>
 </html>
+
 
