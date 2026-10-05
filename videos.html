@@ -12,14 +12,14 @@
         font-family: Arial, sans-serif;
         margin: 0;
         padding: 0;
+        text-align: center;
     }
 
     h1.pixel {
-        font-size: 2.5rem;
+        font-size: 2.8rem;
         background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-align: center;
         margin-top: 2rem;
     }
 
@@ -27,8 +27,9 @@
     #categoryHub {
         display: flex;
         justify-content: center;
-        gap: 4rem;
-        padding: 4rem 2rem;
+        flex-wrap: wrap;
+        gap: 3rem;
+        padding: 3rem 1rem;
         transition: opacity 0.5s ease;
     }
 
@@ -62,7 +63,6 @@
         opacity: 0;
         transition: opacity 0.5s ease;
         padding: 2rem;
-        margin-top: 2rem;
     }
 
     #backBtn {
@@ -70,9 +70,12 @@
         margin-bottom: 1rem;
         cursor: pointer;
         color: #E8C547;
+        text-align: left;
+        width: 90%;
+        margin-left: auto;
+        margin-right: auto;
     }
 
-    /* SECTION TITLES */
     .section-title {
         font-size: 2.2rem;
         margin: 1rem 0;
@@ -98,7 +101,7 @@
         display: none;
     }
 
-    /* VIDEO CARDS BIGGER */
+    /* VIDEO CARDS */
     .video-card {
         min-width: 360px;
         background: #111;
@@ -139,11 +142,6 @@
     .video-creator {
         font-size: 1.1rem;
         color: #ccc;
-    }
-
-    /* REMOVE ARROWS */
-    .arrow {
-        display: none;
     }
 
     /* MODAL */
@@ -208,46 +206,47 @@
 </div>
 
 <script>
-/* VIDEO DATA WITH REAL YOUTUBE TITLES */
+/* FINAL VIDEO DATA WITH CORRECT TITLES */
 const crazycraft = {
-    "Oat – OatTheGoat": [
-        {id:"SCqH3f3Eyws", title:"CrazyCraft Ep 1"},
-        {id:"1NkML6ljVF4", title:"CrazyCraft Ep 2"},
-        {id:"j-6P1al5CCs", title:"CrazyCraft Ep 3"},
-        {id:"8to_n6dYBcU", title:"CrazyCraft Ep 4"}
+    "OatTheGoat": [
+        {id:"SCqH3f3Eyws", title:"Crazy Craft Is Back!!!"},
+        {id:"1NkML6ljVF4", title:"Stolen Steal?"},
+        {id:"j-6P1al5CCs", title:"Hiding Items with My Eyes"},
+        {id:"8to_n6dYBcU", title:"Building Heaven's Kitchen"}
     ],
-    "Crowqe – Crowqe": [
-        {id:"8QQS7HjOJIE", title:"CrazyCraft Ep 1"},
-        {id:"VljkxVIGYRk", title:"CrazyCraft Ep 2"},
-        {id:"uUODDSPJ-2g", title:"CrazyCraft Ep 3"},
-        {id:"DKl8yx2ytXk", title:"CrazyCraft Ep 4"}
+    "Crowqe": [
+        {id:"8QQS7HjOJIE", title:"I Joined a Minecraft SMP but its on Craft Craft..."},
+        {id:"VljkxVIGYRk", title:"Signal Shenanigans"},
+        {id:"uUODDSPJ-2g", title:"Valley Building"},
+        {id:"DKl8yx2ytXk", title:"Trees and conspiracies"}
     ],
-    "Cluck – Cluck": [
-        {id:"UUsDq20GAoQ", title:"CrazyCraft Ep 1"},
-        {id:"d3cXOOWj1-A", title:"CrazyCraft Ep 2"},
-        {id:"V96iGVNEP1w", title:"CrazyCraft Ep 3"},
-        {id:"aymQOS31wY8", title:"CrazyCraft Ep 4"}
+    "Cluck": [
+        {id:"UUsDq20GAoQ", title:"I Built this in a cave!"},
+        {id:"d3cXOOWj1-A", title:"The Return Of Pickles!!"},
+        {id:"V96iGVNEP1w", title:"Upgrades, rats and Dragons"},
+        {id:"aymQOS31wY8", title:"I Revived Dinosaurs In Minecraft"}
     ]
 };
 
 const cobblemon = {
-    "Oat – OatTheGoat": [
-        {id:"V_iyvXQrhgg", title:"Cobblemon Ep 1"},
-        {id:"K043mMMi5Vw", title:"Cobblemon Ep 2"},
-        {id:"-Cv7sl-uhMs", title:"Cobblemon Ep 3"},
-        {id:"XojOlNrDP4A", title:"Cobblemon Ep 4"}
+    "OatTheGoat": [
+        {id:"V_iyvXQrhgg", title:"We just made the BEST Cobblemon experience"},
+        {id:"K043mMMi5Vw", title:"How I Became Cobblemon's Luckiest Player"},
+        {id:"-Cv7sl-uhMs", title:"How I Became Cobblemon's Unluckiest Player"},
+        {id:"XojOlNrDP4A", title:"I Built a Pub in Cobblemon And Got Way Too Drunk..."}
     ],
-    "Crowqe – Crowqe": [
-        {id:"Ndlcw3Gfl_4", title:"Cobblemon Ep 1"},
-        {id:"o0jfMdlmV6g", title:"Cobblemon Ep 2"},
-        {id:"d4Rf41MRar4", title:"Cobblemon Ep 3"}
+    "Crowqe": [
+        {id:"Ndlcw3Gfl_4", title:"I Joined the Cobblemonic Smp..."},
+        {id:"o0jfMdlmV6g", title:"Blood For The Mudkip"},
+        {id:"d4Rf41MRar4", title:"I Collected Every Berry In cobblemon"},
+        {id:"d4Rf41MRar4", title:"I Became A Police Officer On The Cobblemonic SMP..."}
     ]
 };
 
 const tutorials = {
-    "Prosper Tutorials": [
-        {id:"ufkKoSTg-wA", title:"How to Install Modpacks"},
-        {id:"s50sal6owuY", title:"How to Use ProsperMC"}
+    "Prosper": [
+        {id:"ufkKoSTg-wA", title:"How To Make Your Own Custom Oak Trees"},
+        {id:"s50sal6owuY", title:"How To Make A Custom Willow Tree"}
     ]
 };
 
@@ -348,4 +347,3 @@ function closeModal() {
 
 </body>
 </html>
-
