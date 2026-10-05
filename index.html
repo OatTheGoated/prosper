@@ -6,15 +6,14 @@
     <title>Prosper</title>
     <link rel="stylesheet" href="./style.css?v=20">
 
-    <!-- Supabase UMD (works on GitHub Pages) -->
+    <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
-
-        // ⭐ FIX: use "client" instead of "supabase"
-        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const client = supabase.createClient(
+            "https://pnkwqqapyoaxdcpubpwb.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        );
     </script>
 </head>
 
@@ -31,7 +30,7 @@
                 <li><a href="videos.html">Videos</a></li>
                 <li><a href="dashboard.html">Dashboard</a></li>
 
-                <!-- ⭐ Upload tab (hidden unless admin) -->
+                <!-- Admin-only -->
                 <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
 
                 <li><a href="login.html">Login</a></li>
@@ -52,20 +51,17 @@
 
 </div>
 
-<!-- ⭐ ADMIN VISIBILITY SCRIPT -->
+<!-- ⭐ ADMIN VISIBILITY -->
 <script>
     async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
-        if (!uploadTab) return;
 
         const { data: { user } } = await client.auth.getUser();
-
         if (!user) {
             uploadTab.style.display = "none";
             return;
         }
 
-        // Load profile to check role
         const { data: profile } = await client
             .from("profiles")
             .select("role")
@@ -82,5 +78,6 @@
 
 </body>
 </html>
+
 
 
