@@ -41,14 +41,13 @@
 
 </div>
 
-<!-- ⭐ USERNAME SCRIPT -->
+<!-- ⭐ USERNAME SCRIPT (Supabase version) -->
 <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    /* ⭐ Updated to your new Supabase project */
     const supabase = createClient(
         "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
     );
 
     window.saveUsername = async function () {
@@ -72,7 +71,7 @@
             return;
         }
 
-        // Check if username is taken
+        // ⭐ Check if username is taken
         const { data: existing, error: lookupError } = await supabase
             .from("profiles")
             .select("id")
@@ -90,8 +89,8 @@
             return;
         }
 
-        // Update username
-        const { error: upsertError } = await supabase
+        // ⭐ Update username
+        const { error: updateError } = await supabase
             .from("profiles")
             .update({
                 Username: username,
@@ -99,8 +98,8 @@
             })
             .eq("id", user.id);
 
-        if (upsertError) {
-            status.textContent = "Error saving username: " + upsertError.message;
+        if (updateError) {
+            status.textContent = "Error saving username: " + updateError.message;
             status.style.color = "#ff6b6b";
             return;
         }
@@ -120,12 +119,11 @@
 
     const supabaseAdmin = createClient(
         "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
     );
 
     async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
-
         if (!uploadTab) return;
 
         const { data: { user } } = await supabaseAdmin.auth.getUser();
@@ -140,4 +138,3 @@
 
 </body>
 </html>
-
