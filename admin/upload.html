@@ -24,7 +24,7 @@
             padding: 2rem;
             background: #111;
             border-radius: 20px;
-            border: 3px solid #E8C547;
+            border: 3px solid #4db8ff; /* glowing blue */
             margin-top: 40px;
         }
 
@@ -38,7 +38,8 @@
         .upload-grid label {
             text-align: right;
             font-size: 1.2rem;
-            color: #E8C547;
+            color: #4db8ff; /* glowing blue */
+            text-shadow: 0 0 8px #4db8ff;
         }
 
         .upload-grid input,
@@ -56,10 +57,13 @@
             width: 100%;
             padding: 1rem;
             font-size: 1.3rem;
-            background: #E8C547;
+            background: #4db8ff;
             border: none;
             border-radius: 12px;
             cursor: pointer;
+            color: #000;
+            font-weight: bold;
+            text-shadow: 0 0 5px #fff;
         }
 
         /* ⭐ Thumbnail preview */
@@ -73,17 +77,18 @@
             width: 200px;
             height: auto;
             border-radius: 10px;
-            border: 2px solid #E8C547;
+            border: 2px solid #4db8ff; /* glowing blue */
             cursor: pointer;
             transition: transform 0.3s ease;
             display: none;
+            box-shadow: 0 0 15px #4db8ff;
         }
 
         .thumb-preview:hover {
             transform: scale(1.05);
         }
 
-        /* ⭐ Modal (reuse style similar to videos page) */
+        /* ⭐ Modal */
         .modal {
             display: none;
             position: fixed;
@@ -100,7 +105,8 @@
             border-radius: 10px;
             max-width: 900px;
             width: 90%;
-            border: 2px solid #E8C547;
+            border: 2px solid #4db8ff; /* glowing blue */
+            box-shadow: 0 0 20px #4db8ff;
         }
     </style>
 </head>
@@ -141,9 +147,6 @@
                 <label for="description">Description</label>
                 <textarea id="description" placeholder="Description"></textarea>
 
-                <label for="author">Author</label>
-                <input id="author" placeholder="Author">
-
                 <label>Schematic File (.schem / .litematic)</label>
                 <input id="schemFile" type="file">
 
@@ -173,7 +176,7 @@
 <script>
     let currentUser = null;
 
-    // ⭐ ADMIN CHECK
+    // ⭐ ADMIN CHECK + AUTO-DETECT AUTHOR
     async function checkAdmin() {
         const { data: { session } } = await client.auth.getSession();
 
@@ -192,9 +195,6 @@
         }
 
         currentUser = user;
-
-        // ⭐ Auto-fill author
-        document.getElementById("author").value = user.email;
     }
 
     checkAdmin();
@@ -240,12 +240,11 @@
         const name = document.getElementById("name").value.trim();
         const tags = document.getElementById("tags").value.trim();
         const description = document.getElementById("description").value.trim();
-        const author = document.getElementById("author").value.trim();
 
         const schemFile = document.getElementById("schemFile").files[0];
         const imageFile = document.getElementById("imageFile").files[0];
 
-        if (!name || !tags || !description || !author) {
+        if (!name || !tags || !description) {
             alert("Fill in all fields.");
             return;
         }
@@ -254,6 +253,9 @@
             alert("Missing files.");
             return;
         }
+
+        // ⭐ Auto-detected author
+        const author = currentUser.email;
 
         // ⭐ Upload schematic
         const schemPath = `public/${Date.now()}_${schemFile.name}`;
@@ -293,7 +295,7 @@
             .from("images")
             .getPublicUrl(imagePath).data.publicUrl;
 
-        // ⭐ Insert metadata (NOW WITH AUTHOR)
+        // ⭐ Insert metadata (NOW FULLY AUTOMATIC AUTHOR)
         const { error: dbErr } = await client
             .from("schematics")
             .insert({
