@@ -68,10 +68,22 @@
             background: #aa0000 !important;
         }
     </style>
+
+    <!-- Supabase UMD (works on GitHub Pages) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
+
+        // ⭐ FIX: use "client" instead of "supabase"
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let currentUser = null;
+    </script>
 </head>
+
 <body>
 
-<!-- ⭐ NAVBAR -->
 <nav class="navbar" style="background:#000; padding:10px 20px;">
     <div class="container" style="display:flex; align-items:center; justify-content:space-between;">
         <h1 class="logo pixel">⛏️ Prosper</h1>
@@ -81,10 +93,7 @@
             <li><a href="schematics.html" class="active">Schematics</a></li>
             <li><a href="videos.html">Videos</a></li>
             <li><a href="dashboard.html">Dashboard</a></li>
-
-            <!-- ⭐ Upload tab (admin only) -->
             <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
-
             <li><a href="login.html">Login</a></li>
         </ul>
     </div>
@@ -94,35 +103,24 @@
 
 <div id="schemContainer" class="schem-grid"></div>
 
-<!-- ⭐ MAIN SCRIPT (Supabase version) -->
-<script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    // ⭐ Your Supabase project
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
-    );
-
-    let currentUser = null;
-
+<script>
     // ⭐ Load user
     async function loadUser() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await client.auth.getUser();
         currentUser = user;
     }
 
-    await loadUser();
+    loadUser();
 
-    // ⭐ Load schematics from Supabase table
+    // ⭐ Load schematics
     async function loadSchematics() {
         const container = document.getElementById("schemContainer");
         container.innerHTML = "";
 
-        const { data: schems, error } = await supabase
+        const { data: schems, error } = await client
             .from("schematics")
             .select("*")
-            .order("uploaded_at", { ascending: false });
+            .order("created_at", { ascending: false });
 
         if (error) {
             console.error(error);
@@ -133,7 +131,7 @@
             const id = s.id;
 
             // ⭐ Count likes
-            const { count } = await supabase
+            const { count } = await client
                 .from("schematic_likes")
                 .select("*", { count: "exact", head: true })
                 .eq("schematic_id", id);
@@ -157,12 +155,20 @@
             `;
 
             // ⭐ Admin delete button
-            if (currentUser?.user_metadata?.role === "admin") {
-                const delBtn = document.createElement("button");
-                delBtn.className = "delete-btn";
-                delBtn.innerText = "🗑️ Delete Schematic";
-                delBtn.onclick = () => deleteSchematic(s);
-                card.appendChild(delBtn);
+            if (currentUser) {
+                const { data: profile } = await client
+                    .from("profiles")
+                    .select("role")
+                    .eq("id", currentUser.id)
+                    .maybeSingle();
+
+                if (profile?.role === "admin") {
+                    const delBtn = document.createElement("button");
+                    delBtn.className = "delete-btn";
+                    delBtn.innerText = "🗑️ Delete Schematic";
+                    delBtn.onclick = () => deleteSchematic(s);
+                    card.appendChild(delBtn);
+                }
             }
 
             container.appendChild(card);
@@ -178,7 +184,7 @@
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await client
             .from("schematic_likes")
             .insert({
                 user_id: currentUser.id,
@@ -198,16 +204,20 @@
         if (!confirm("Are you sure you want to delete this schematic?")) return;
 
         // Delete image file
-        await supabase.storage.from("images").remove([s.image.replace(/^.*\/storage\/v1\/object\/public\/images\//, "")]);
+        await client.storage.from("images").remove([
+            s.image.replace(/^.*\/storage\/v1\/object\/public\/images\//, "")
+        ]);
 
         // Delete schematic file
-        await supabase.storage.from("schematics").remove([s.file.replace(/^.*\/storage\/v1\/object\/public\/schematics\//, "")]);
+        await client.storage.from("schematics").remove([
+            s.file.replace(/^.*\/storage\/v1\/object\/public\/schematics\//, "")
+        ]);
 
         // Delete metadata
-        await supabase.from("schematics").delete().eq("id", s.id);
+        await client.from("schematics").delete().eq("id", s.id);
 
         // Delete likes
-        await supabase.from("schematic_likes").delete().eq("schematic_id", s.id);
+        await client.from("schematic_likes").delete().eq("schematic_id", s.id);
 
         alert("Schematic deleted.");
         loadSchematics();
@@ -217,7 +227,19 @@
     async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
 
-        if (!currentUser || currentUser.user_metadata?.role !== "admin") {
+        const { data: { user } } = await client.auth.getUser();
+        if (!user) {
+            uploadTab.style.display = "none";
+            return;
+        }
+
+        const { data: profile } = await client
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (!profile || profile.role !== "admin") {
             uploadTab.style.display = "none";
         }
     }
