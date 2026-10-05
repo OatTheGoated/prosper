@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <title>Dashboard – Prosper</title>
     <link rel="stylesheet" href="./style.css?v=22">
+
+    <!-- Supabase UMD (works on GitHub Pages) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
+
+        // ⭐ FIX: use "client" instead of "supabase"
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
 </head>
 
 <body>
@@ -19,7 +30,7 @@
                 <li><a href="videos.html">Videos</a></li>
                 <li><a href="dashboard.html" class="active">Dashboard</a></li>
 
-                <!-- ⭐ Upload tab (admin only) -->
+                <!-- Admin-only -->
                 <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
             </ul>
         </div>
@@ -55,30 +66,21 @@
 
 </div>
 
-<!-- ⭐ DASHBOARD SCRIPT (Supabase version) -->
-<script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    // ⭐ Your Supabase project
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
-    );
-
+<script>
     async function loadDashboard() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await client.auth.getUser();
 
         if (!user) {
-            window.location.href = "/prosper/login.html";
+            window.location.href = "login.html";
             return;
         }
 
-        // ⭐ Display basic info
+        // Display basic info
         document.getElementById("emailDisplay").textContent = user.email;
         document.getElementById("idDisplay").textContent = user.id;
 
-        // ⭐ Load profile from Supabase table "profiles"
-        const { data: profileData, error } = await supabase
+        // Load profile from Supabase
+        const { data: profileData, error } = await client
             .from("profiles")
             .select("*")
             .eq("id", user.id)
@@ -86,14 +88,14 @@
 
         if (profileData) {
             document.getElementById("usernameDisplay").textContent =
-                profileData.Username || "Unknown";
+                profileData.username || "Unknown";
 
             if (profileData.pfp_url) {
                 document.getElementById("profilePic").src = profileData.pfp_url;
             }
 
-            // ⭐ Admin visibility
-            if (user.user_metadata?.role !== "admin") {
+            // Admin visibility
+            if (profileData.role !== "admin") {
                 document.getElementById("uploadTab").style.display = "none";
             }
         } else {
@@ -103,7 +105,7 @@
 
     loadDashboard();
 
-    // ⭐ Live preview of UUID avatar
+    // Live preview of UUID avatar
     document.getElementById("mcUUID").addEventListener("input", () => {
         let uuid = document.getElementById("mcUUID").value.trim().replace(/-/g, "");
         if (uuid.length === 32) {
@@ -112,7 +114,7 @@
         }
     });
 
-    // ⭐ Save profile picture
+    // Save profile picture
     document.getElementById("savePfpBtn").addEventListener("click", async () => {
         let uuid = document.getElementById("mcUUID").value.trim().replace(/-/g, "");
         if (uuid.length !== 32) {
@@ -120,7 +122,7 @@
             return;
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await client.auth.getUser();
         if (!user) {
             alert("You must be logged in.");
             return;
@@ -128,7 +130,7 @@
 
         const pfpURL = `https://crafatar.com/avatars/${uuid}?size=128&overlay`;
 
-        const { error } = await supabase
+        const { error } = await client
             .from("profiles")
             .update({ pfp_url: pfpURL })
             .eq("id", user.id);
@@ -142,12 +144,10 @@
         alert("Profile picture updated!");
     });
 
-    // ⭐ Logout
+    // Logout
     document.getElementById("logoutBtn").addEventListener("click", async () => {
-        await supabase.auth.signOut();
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.href = "/prosper/index.html";
+        await client.auth.signOut();
+        window.location.href = "index.html";
     });
 </script>
 
