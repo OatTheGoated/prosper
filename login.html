@@ -19,18 +19,18 @@
 </div>
 
 <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    import { auth } from "./firebase-config.js";
+    import { signInWithEmailAndPassword }
+        from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
-    // Your real Supabase project URL + anon key
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
-    );
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const loginBtn = document.getElementById("loginBtn");
+    const msg = document.getElementById("msg");
 
-    async function login() {
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value.trim();
-        const msg = document.getElementById("msg");
+    loginBtn.addEventListener("click", async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
 
         if (!email || !password) {
             msg.textContent = "Please enter both email and password.";
@@ -39,24 +39,18 @@
 
         msg.textContent = "Logging in...";
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
-
-        if (error) {
-            msg.textContent = error.message;
-            return;
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            msg.textContent = "Success! Redirecting...";
+            setTimeout(() => {
+                window.location.href = "dashboard.html";
+            }, 1200);
+        } catch (err) {
+            msg.textContent = err.message;
         }
-
-        msg.textContent = "Success! Redirecting...";
-        setTimeout(() => {
-            window.location.href = "dashboard.html";
-        }, 1200);
-    }
-
-    document.getElementById("loginBtn").addEventListener("click", login);
+    });
 </script>
 
 </body>
 </html>
+
