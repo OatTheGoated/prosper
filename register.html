@@ -5,15 +5,12 @@
     <title>Register – Prosper</title>
     <link rel="stylesheet" href="./style.css?v=30">
 
-    <!-- Supabase JS (UMD, works on GitHub Pages) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <script>
-        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
-
-        // ⭐ FIX: use "client" instead of "supabase"
-        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const client = supabase.createClient(
+            "https://pnkwqqapyoaxdcpubpwb.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        );
     </script>
 </head>
 
@@ -25,7 +22,7 @@
         <input id="email" type="email" placeholder="Email">
         <input id="password" type="password" placeholder="Password">
         <input id="username" type="text" placeholder="Username">
-        <button id="registerBtn" type="button">Register</button>
+        <button id="registerBtn">Register</button>
         <p id="msg"></p>
     </div>
 </div>
@@ -34,10 +31,9 @@
     const emailInput = document.getElementById("email");
     const passwordInput = document.getElementById("password");
     const usernameInput = document.getElementById("username");
-    const registerBtn = document.getElementById("registerBtn");
     const msg = document.getElementById("msg");
 
-    registerBtn.addEventListener("click", async () => {
+    document.getElementById("registerBtn").onclick = async () => {
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
         const username = usernameInput.value.trim();
@@ -49,50 +45,32 @@
 
         msg.textContent = "Creating account...";
 
-        try {
-            // ⭐ FIX: use client instead of supabase
-            const { data, error } = await client.auth.signUp({
-                email,
-                password
-            });
+        const { data, error } = await client.auth.signUp({ email, password });
 
-            if (error) {
-                msg.textContent = error.message;
-                return;
-            }
-
-            const user = data.user;
-            if (!user) {
-                msg.textContent = "Could not create user. Please try again.";
-                return;
-            }
-
-            // Insert profile row
-            const { error: profileError } = await client
-                .from("profiles")
-                .insert({
-                    id: user.id,
-                    username: username,
-                    email: email,
-                    role: "user"
-                });
-
-            if (profileError) {
-                msg.textContent = "Account created, but profile failed: " + profileError.message;
-                return;
-            }
-
-            msg.textContent = "Account created! Redirecting...";
-            setTimeout(() => {
-                window.location.href = "login.html";
-            }, 1500);
-
-        } catch (err) {
-            msg.textContent = "Unexpected error: " + err.message;
+        if (error) {
+            msg.textContent = error.message;
+            return;
         }
-    });
+
+        const user = data.user;
+        if (!user) {
+            msg.textContent = "Unexpected error.";
+            return;
+        }
+
+        await client.from("profiles").insert({
+            id: user.id,
+            email,
+            username,
+            role: "user"
+        });
+
+        msg.textContent = "Account created! Redirecting...";
+        setTimeout(() => window.location.href = "login.html", 1500);
+    };
 </script>
 
 </body>
 </html>
+
 
