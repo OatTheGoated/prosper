@@ -49,8 +49,29 @@
             return;
         }
 
-        msg.textContent = "Success! Redirecting...";
-        setTimeout(() => window.location.href = "dashboard.html", 1200);
+        msg.textContent = "Success! Loading session...";
+
+        // ⭐ Wait for Supabase to fully restore the session
+        let tries = 0;
+        let session = null;
+
+        while (tries < 10) {
+            const { data } = await client.auth.getSession();
+            session = data.session;
+
+            if (session) break;
+
+            await new Promise(r => setTimeout(r, 200));
+            tries++;
+        }
+
+        if (!session) {
+            msg.textContent = "Error: Session did not load. Try again.";
+            return;
+        }
+
+        msg.textContent = "Session ready! Redirecting...";
+        window.location.href = "dashboard.html";
     };
 </script>
 
