@@ -5,6 +5,7 @@
     <title>Register – Prosper</title>
     <link rel="stylesheet" href="./style.css?v=30">
 
+    <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const client = supabase.createClient(
@@ -45,7 +46,14 @@
 
         msg.textContent = "Creating account...";
 
-        const { data, error } = await client.auth.signUp({ email, password });
+        // ⭐ FIXED SIGNUP WITH CORRECT REDIRECT URL
+        const { data, error } = await client.auth.signUp({
+            email,
+            password,
+            options: {
+                emailRedirectTo: "https://oatthegoated.github.io/prosper/login.html"
+            }
+        });
 
         if (error) {
             msg.textContent = error.message;
@@ -65,8 +73,7 @@
             role: "user"
         });
 
-        msg.textContent = "Account created! Redirecting...";
-        setTimeout(() => window.location.href = "login.html", 1500);
+        msg.textContent = "Account created! Check your email to confirm.";
     };
 </script>
 
