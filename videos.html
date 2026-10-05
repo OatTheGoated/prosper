@@ -1,26 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Videos - Prosper</title>
-    <link rel="stylesheet" href="./style.css?v=22">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Videos - Prosper</title>
+<link rel="stylesheet" href="./style.css?v=23">
 
-    <!-- Supabase UMD -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+    body {
+        background-color: #0a0a0a;
+        color: #fff;
+        font-family: Arial, sans-serif;
+    }
 
-    <script>
-        const client = supabase.createClient(
-            "https://pnkwqqapyoaxdcpubpwb.supabase.co",
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
-        );
-    </script>
+    h1.pixel {
+        color: #E8C547;
+        background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* SECTION TITLES */
+    .section-title {
+        font-size: 2rem;
+        margin: 2rem 0 1rem;
+        background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* SLIDER WRAPPER */
+    .slider-container {
+        position: relative;
+        margin-bottom: 3rem;
+    }
+
+    .slider {
+        display: flex;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        gap: 1.5rem;
+        padding: 1rem 0;
+    }
+
+    .slider::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* VIDEO CARD */
+    .video-card {
+        min-width: 280px;
+        background: #111;
+        border-radius: 10px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
+        position: relative;
+    }
+
+    .video-card:hover {
+        transform: scale(1.05);
+        border: 2px solid #E8C547;
+        box-shadow: 0 0 20px #C9A227;
+    }
+
+    .video-thumb {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+    }
+
+    .video-info {
+        padding: 0.8rem;
+    }
+
+    .video-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .video-creator {
+        font-size: 0.9rem;
+        color: #ccc;
+    }
+
+    /* ARROWS */
+    .arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 2.5rem;
+        color: #E8C547;
+        cursor: pointer;
+        z-index: 10;
+        user-select: none;
+        padding: 0 10px;
+    }
+
+    .arrow-left {
+        left: 0;
+    }
+
+    .arrow-right {
+        right: 0;
+    }
+
+    .arrow:hover {
+        color: #fff;
+    }
+
+    /* MODAL */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .modal-content {
+        background: #111;
+        padding: 1rem;
+        border-radius: 10px;
+        max-width: 900px;
+        width: 90%;
+        border: 2px solid #E8C547;
+    }
+
+    .modal-close {
+        float: right;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #E8C547;
+    }
+
+    iframe {
+        width: 100%;
+        height: 500px;
+        border: none;
+    }
+</style>
 </head>
 
 <body>
+
 <div class="site">
 
-    <!-- NAVBAR -->
     <nav class="navbar">
         <div class="container">
             <h1 class="logo pixel">⛏️ Prosper</h1>
@@ -30,57 +161,44 @@
                 <li><a href="schematics.html">Schematics</a></li>
                 <li><a href="videos.html" class="active">Videos</a></li>
                 <li><a href="dashboard.html">Dashboard</a></li>
-
-                <!-- Admin-only -->
                 <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
-
                 <li><a href="login.html">Login</a></li>
             </ul>
         </div>
     </nav>
 
-    <!-- MAIN CONTENT -->
     <main>
         <div class="container">
-            <div class="content">
-                <h1 class="pixel">📺 Videos & Tutorials</h1>
-                <p>Watch content from some of our Creators!</p>
 
-                <!-- VIDEO GRID -->
-                <div class="video-grid">
+            <h1 class="pixel">📺 Videos & Tutorials</h1>
 
-                    <div class="video-card">
-                        <h3>Crazy Craft</h3>
-                        <p>Oat's CrazyCraft</p>
-                        <div class="video-container">
-                            <iframe src="https://www.youtube.com/embed/SCqH3f3Eyws" allowfullscreen></iframe>
-                        </div>
-                    </div>
+            <!-- CRAZYCRAFT -->
+            <h2 class="section-title">CrazyCraft Series</h2>
+            <div class="slider-container">
+                <div class="arrow arrow-left" onclick="scrollLeft('crazycraft')">&#10094;</div>
+                <div class="arrow arrow-right" onclick="scrollRight('crazycraft')">&#10095;</div>
 
-                    <div class="video-card">
-                        <h3>Modded Minecraft</h3>
-                        <p>Crowqes CrazyCraft</p>
-                        <div class="video-container">
-                            <iframe src="https://www.youtube.com/embed/8QQS7HjOJIE" allowfullscreen></iframe>
-                        </div>
-                    </div>
-
-                    <div class="video-card">
-                        <h3>Survival Adventures</h3>
-                        <p>Cluck's CrazyCraft</p>
-                        <div class="video-container">
-                            <iframe src="https://www.youtube.com/embed/UUsDq20GAoQ" allowfullscreen></iframe>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div style="margin-top: 3rem; padding: 2rem; background-color: #0f3460; border-radius: 8px;">
-                    <h2 style="color: #00ff88; margin-bottom: 1rem;">More Coming Soon</h2>
-                    <p style="color: #b0b0b0;">Stay tuned for more videos and tutorials.</p>
-                </div>
-
+                <div id="crazycraft" class="slider"></div>
             </div>
+
+            <!-- COBBLEMON -->
+            <h2 class="section-title">Cobblemon Series</h2>
+            <div class="slider-container">
+                <div class="arrow arrow-left" onclick="scrollLeft('cobblemon')">&#10094;</div>
+                <div class="arrow arrow-right" onclick="scrollRight('cobblemon')">&#10095;</div>
+
+                <div id="cobblemon" class="slider"></div>
+            </div>
+
+            <!-- TUTORIALS -->
+            <h2 class="section-title">Tutorials</h2>
+            <div class="slider-container">
+                <div class="arrow arrow-left" onclick="scrollLeft('tutorials')">&#10094;</div>
+                <div class="arrow arrow-right" onclick="scrollRight('tutorials')">&#10095;</div>
+
+                <div id="tutorials" class="slider"></div>
+            </div>
+
         </div>
     </main>
 
@@ -90,43 +208,87 @@
 
 </div>
 
+<!-- MODAL -->
+<div id="videoModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">✖</span>
+        <iframe id="videoFrame" src="" allowfullscreen></iframe>
+    </div>
+</div>
+
 <script>
-window.addEventListener("load", () => {
-    document.querySelectorAll("img, iframe").forEach(el => {
-        if (el.complete) {
-            el.classList.add("loaded");
-        } else {
-            el.addEventListener("load", () => {
-                el.classList.add("loaded");
-            });
-        }
+const crazycraftVideos = [
+    {title:"Oat Ep 1", creator:"Oat", url:"SCqH3f3Eyws"},
+    {title:"Oat Ep 2", creator:"Oat", url:"1NkML6ljVF4"},
+    {title:"Oat Ep 3", creator:"Oat", url:"j-6P1al5CCs"},
+    {title:"Oat Ep 4", creator:"Oat", url:"8to_n6dYBcU"},
+
+    {title:"Crowqe Ep 1", creator:"Crowqe", url:"8QQS7HjOJIE"},
+    {title:"Crowqe Ep 2", creator:"Crowqe", url:"VljkxVIGYRk"},
+    {title:"Crowqe Ep 3", creator:"Crowqe", url:"uUODDSPJ-2g"},
+    {title:"Crowqe Ep 4", creator:"Crowqe", url:"DKl8yx2ytXk"},
+
+    {title:"Cluck Ep 1", creator:"Cluck", url:"UUsDq20GAoQ"},
+    {title:"Cluck Ep 2", creator:"Cluck", url:"d3cXOOWj1-A"},
+    {title:"Cluck Ep 3", creator:"Cluck", url:"V96iGVNEP1w"},
+    {title:"Cluck Ep 4", creator:"Cluck", url:"aymQOS31wY8"}
+];
+
+const cobblemonVideos = [
+    {title:"Oat Ep 1", creator:"Oat", url:"V_iyvXQrhgg"},
+    {title:"Oat Ep 2", creator:"Oat", url:"K043mMMi5Vw"},
+    {title:"Oat Ep 3", creator:"Oat", url:"-Cv7sl-uhMs"},
+    {title:"Oat Ep 4", creator:"Oat", url:"XojOlNrDP4A"},
+
+    {title:"Crowqe Ep 1", creator:"Crowqe", url:"Ndlcw3Gfl_4"},
+    {title:"Crowqe Ep 2", creator:"Crowqe", url:"o0jfMdlmV6g"},
+    {title:"Crowqe Ep 3", creator:"Crowqe", url:"d4Rf41MRar4"}
+];
+
+const tutorialVideos = [
+    {title:"Tutorial 1", creator:"Prosper", url:"ufkKoSTg-wA"},
+    {title:"Tutorial 2", creator:"Prosper", url:"s50sal6owuY"}
+];
+
+function renderVideos(list, elementId) {
+    const container = document.getElementById(elementId);
+    list.forEach(v => {
+        const card = document.createElement("div");
+        card.className = "video-card";
+        card.onclick = () => openModal(v.url);
+
+        card.innerHTML = `
+            <img class="video-thumb" src="https://img.youtube.com/vi/${v.url}/maxresdefault.jpg">
+            <div class="video-info">
+                <div class="video-title">${v.title}</div>
+                <div class="video-creator">${v.creator}</div>
+            </div>
+        `;
+        container.appendChild(card);
     });
-});
-</script>
+}
 
-<!-- ⭐ ADMIN VISIBILITY -->
-<script>
-    async function applyAdminVisibility() {
-        const uploadTab = document.getElementById("uploadTab");
+renderVideos(crazycraftVideos, "crazycraft");
+renderVideos(cobblemonVideos, "cobblemon");
+renderVideos(tutorialVideos, "tutorials");
 
-        const { data: { user } } = await client.auth.getUser();
-        if (!user) {
-            uploadTab.style.display = "none";
-            return;
-        }
+function scrollLeft(id) {
+    document.getElementById(id).scrollLeft -= 300;
+}
 
-        const { data: profile } = await client
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
+function scrollRight(id) {
+    document.getElementById(id).scrollLeft += 300;
+}
 
-        if (!profile || profile.role !== "admin") {
-            uploadTab.style.display = "none";
-        }
-    }
+function openModal(videoId) {
+    document.getElementById("videoModal").style.display = "flex";
+    document.getElementById("videoFrame").src = `https://www.youtube.com/embed/${videoId}`;
+}
 
-    applyAdminVisibility();
+function closeModal() {
+    document.getElementById("videoModal").style.display = "none";
+    document.getElementById("videoFrame").src = "";
+}
 </script>
 
 </body>
