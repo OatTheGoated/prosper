@@ -1,9 +1,10 @@
 <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
+    // ⭐ Your real Supabase project
     const supabase = createClient(
         "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
     );
 
     const status = document.getElementById("status");
@@ -22,6 +23,7 @@
         status.textContent = "Logging in...";
         status.style.color = "#00ff88";
 
+        // ⭐ Supabase login
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password
