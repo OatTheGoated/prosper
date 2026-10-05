@@ -43,11 +43,13 @@
 
             <input id="mcUUID" placeholder="2982b204842f4220a668f73fa9822c6d">
 
-            <button class="btn-red" onclick="saveProfilePic()" style="margin-top:10px;">
+            <button class="btn-red" id="savePfpBtn" style="margin-top:10px;">
                 Save Profile Picture
             </button>
 
-            <button class="btn-red" style="margin-top:20px;" onclick="logout()">Logout</button>
+            <button class="btn-red" id="logoutBtn" style="margin-top:20px;">
+                Logout
+            </button>
         </div>
     </section>
 
@@ -55,47 +57,52 @@
 
 <!-- ⭐ DASHBOARD SCRIPT -->
 <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    import { auth, db } from "./firebase-config.js";
+    import {
+        onAuthStateChanged,
+        signOut
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
-    /* ⭐ Updated to your new Supabase project */
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
-    );
+    import {
+        doc,
+        getDoc,
+        updateDoc
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-    async function loadDashboard() {
-        const { data: { user } } = await supabase.auth.getUser();
-
+    // ⭐ Load dashboard data
+    onAuthStateChanged(auth, async (user) => {
         if (!user) {
             window.location.href = "/prosper/login.html";
             return;
         }
 
         document.getElementById("emailDisplay").textContent = user.email;
-        document.getElementById("idDisplay").textContent = user.id;
+        document.getElementById("idDisplay").textContent = user.uid;
 
-        const { data, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle();
+        // Load profile from Firestore
+        const profileRef = doc(db, "profiles", user.uid);
+        const profileSnap = await getDoc(profileRef);
 
-        if (error) {
-            console.error(error);
-            document.getElementById("usernameDisplay").textContent = "Unknown";
-            return;
-        }
+        if (profileSnap.exists()) {
+            const profile = profileSnap.data();
 
-        if (data) {
-            document.getElementById("usernameDisplay").textContent = data.Username || "Unknown";
-            if (data.pfp_url) {
-                document.getElementById("profilePic").src = data.pfp_url;
+            document.getElementById("usernameDisplay").textContent =
+                profile.username || "Unknown";
+
+            if (profile.pfp_url) {
+                document.getElementById("profilePic").src = profile.pfp_url;
             }
+
+            // ⭐ Admin visibility
+            if (profile.role !== "admin") {
+                document.getElementById("uploadTab").style.display = "none";
+            }
+        } else {
+            document.getElementById("usernameDisplay").textContent = "Unknown";
         }
-    }
+    });
 
-    loadDashboard();
-
+    // ⭐ Live preview of UUID avatar
     document.getElementById("mcUUID").addEventListener("input", () => {
         let uuid = document.getElementById("mcUUID").value.trim().replace(/-/g, "");
         if (uuid.length === 32) {
@@ -104,14 +111,15 @@
         }
     });
 
-    window.saveProfilePic = async function () {
+    // ⭐ Save profile picture
+    document.getElementById("savePfpBtn").addEventListener("click", async () => {
         let uuid = document.getElementById("mcUUID").value.trim().replace(/-/g, "");
         if (uuid.length !== 32) {
             alert("UUID must be exactly 32 characters.");
             return;
         }
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = auth.currentUser;
         if (!user) {
             alert("You must be logged in.");
             return;
@@ -119,54 +127,22 @@
 
         const pfpURL = `https://crafatar.com/avatars/${uuid}?size=128&overlay`;
 
-        const { error } = await supabase
-            .from("profiles")
-            .update({ pfp_url: pfpURL })
-            .eq("id", user.id);
-
-        if (error) {
-            console.error(error);
-            alert("Failed to save profile picture.");
-            return;
-        }
+        const profileRef = doc(db, "profiles", user.uid);
+        await updateDoc(profileRef, { pfp_url: pfpURL });
 
         document.getElementById("profilePic").src = pfpURL;
         alert("Profile picture updated!");
-    };
+    });
 
-    window.logout = async function () {
-        await supabase.auth.signOut();
+    // ⭐ Logout
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+        await signOut(auth);
         localStorage.clear();
         sessionStorage.clear();
         window.location.href = "/prosper/index.html";
-    };
-</script>
-
-<!-- ⭐ ADMIN VISIBILITY SCRIPT -->
-<script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    const supabaseAdmin = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
-    );
-
-    async function applyAdminVisibility() {
-        const uploadTab = document.getElementById("uploadTab");
-
-        if (!uploadTab) return;
-
-        const { data: { user } } = await supabaseAdmin.auth.getUser();
-
-        if (!user || user.user_metadata?.role !== "admin") {
-            uploadTab.style.display = "none";
-        }
-    }
-
-    applyAdminVisibility();
+    });
 </script>
 
 </body>
 </html>
-
 
