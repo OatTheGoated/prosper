@@ -38,7 +38,7 @@
         .upload-grid label {
             text-align: right;
             font-size: 1.2rem;
-            color: #4db8ff; /* glowing blue */
+            color: #4db8ff;
             text-shadow: 0 0 8px #4db8ff;
         }
 
@@ -77,7 +77,7 @@
             width: 200px;
             height: auto;
             border-radius: 10px;
-            border: 2px solid #4db8ff; /* glowing blue */
+            border: 2px solid #4db8ff;
             cursor: pointer;
             transition: transform 0.3s ease;
             display: none;
@@ -105,7 +105,7 @@
             border-radius: 10px;
             max-width: 900px;
             width: 90%;
-            border: 2px solid #4db8ff; /* glowing blue */
+            border: 2px solid #4db8ff;
             box-shadow: 0 0 20px #4db8ff;
         }
     </style>
@@ -257,8 +257,8 @@
         // ⭐ Auto-detected author
         const author = currentUser.email;
 
-        // ⭐ Upload schematic
-        const schemPath = `public/${Date.now()}_${schemFile.name}`;
+        // ⭐ Upload schematic (WORKING PATH)
+        const schemPath = `${Date.now()}_${schemFile.name}`;
         const { error: schemErr } = await client.storage
             .from("schematics")
             .upload(schemPath, schemFile, {
@@ -276,8 +276,8 @@
             .from("schematics")
             .getPublicUrl(schemPath).data.publicUrl;
 
-        // ⭐ Upload image
-        const imagePath = `public/${Date.now()}_${imageFile.name}`;
+        // ⭐ Upload image (WORKING PATH)
+        const imagePath = `${Date.now()}_${imageFile.name}`;
         const { error: imgErr } = await client.storage
             .from("images")
             .upload(imagePath, imageFile, {
@@ -295,7 +295,7 @@
             .from("images")
             .getPublicUrl(imagePath).data.publicUrl;
 
-        // ⭐ Insert metadata (NOW FULLY AUTOMATIC AUTHOR)
+        // ⭐ Insert metadata (automatic author)
         const { error: dbErr } = await client
             .from("schematics")
             .insert({
