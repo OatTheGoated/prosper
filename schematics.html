@@ -94,103 +94,82 @@
 
 <div id="schemContainer" class="schem-grid"></div>
 
-<!-- ⭐ MAIN SCRIPT -->
+<!-- ⭐ MAIN SCRIPT (Supabase version) -->
 <script type="module">
-    import { auth, db, storage } from "./firebase-config.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    import {
-        onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-
-    import {
-        collection,
-        getDocs,
-        doc,
-        getDoc,
-        deleteDoc,
-        query,
-        where,
-        addDoc
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-
-    import {
-        ref,
-        getDownloadURL,
-        deleteObject
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
+    // ⭐ Your Supabase project
+    const supabase = createClient(
+        "https://pnkwqqapyoxadcpubpwb.supabase.co",
+        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
+    );
 
     let currentUser = null;
-    let currentProfile = null;
 
-    // ⭐ Load user + profile
-    onAuthStateChanged(auth, async (user) => {
+    // ⭐ Load user
+    async function loadUser() {
+        const { data: { user } } = await supabase.auth.getUser();
         currentUser = user;
+    }
 
-        if (user) {
-            const profileRef = doc(db, "profiles", user.uid);
-            const profileSnap = await getDoc(profileRef);
-            if (profileSnap.exists()) {
-                currentProfile = profileSnap.data();
-            }
-        }
+    await loadUser();
 
-        loadSchematics();
-        applyAdminVisibility();
-    });
-
-    // ⭐ Load schematics from Firestore
+    // ⭐ Load schematics from Supabase table
     async function loadSchematics() {
         const container = document.getElementById("schemContainer");
         container.innerHTML = "";
 
-        const schemSnap = await getDocs(collection(db, "schematics"));
+        const { data: schems, error } = await supabase
+            .from("schematics")
+            .select("*")
+            .order("uploaded_at", { ascending: false });
 
-        for (const docSnap of schemSnap.docs) {
-            const s = docSnap.data();
-            const id = docSnap.id;
+        if (error) {
+            console.error(error);
+            return;
+        }
 
-            // ⭐ Get image URL
-            const imageURL = s.image;
-
-            // ⭐ Get schematic file URL
-            const fileURL = s.file;
+        for (const s of schems) {
+            const id = s.id;
 
             // ⭐ Count likes
-            const likesSnap = await getDocs(
-                query(collection(db, "schematic_likes"), where("schematic_id", "==", id))
-            );
-            const likeCount = likesSnap.size;
+            const { count } = await supabase
+                .from("schematic_likes")
+                .select("*", { count: "exact", head: true })
+                .eq("schematic_id", id);
 
             const card = document.createElement("div");
             card.className = "schem-card";
 
             card.innerHTML = `
-                <img src="${imageURL}" alt="${s.name}">
+                <img src="${s.image}" alt="${s.name}">
                 <h3>${s.name}</h3>
                 <p>${s.description}</p>
                 <p><strong>Tags:</strong> ${Array.isArray(s.tags) ? s.tags.join(", ") : s.tags}</p>
 
-                <button onclick="window.location='${fileURL}'">
+                <button onclick="window.location='${s.file}'">
                     Download Schematic
                 </button>
 
                 <button class="like-btn" onclick="likeSchematic('${id}')">
-                    ❤️ Like (${likeCount})
+                    ❤️ Like (${count})
                 </button>
             `;
 
             // ⭐ Admin delete button
-            if (currentProfile && currentProfile.role === "admin") {
+            if (currentUser?.user_metadata?.role === "admin") {
                 const delBtn = document.createElement("button");
                 delBtn.className = "delete-btn";
                 delBtn.innerText = "🗑️ Delete Schematic";
-                delBtn.onclick = () => deleteSchematic(id, s);
+                delBtn.onclick = () => deleteSchematic(s);
                 card.appendChild(delBtn);
             }
 
             container.appendChild(card);
         }
     }
+
+    loadSchematics();
 
     // ⭐ Like schematic
     async function likeSchematic(id) {
@@ -199,70 +178,52 @@
             return;
         }
 
-        // Check if already liked
-        const likesSnap = await getDocs(
-            query(collection(db, "schematic_likes"),
-                where("user_id", "==", currentUser.uid),
-                where("schematic_id", "==", id)
-            )
-        );
+        const { error } = await supabase
+            .from("schematic_likes")
+            .insert({
+                user_id: currentUser.id,
+                schematic_id: id
+            });
 
-        if (!likesSnap.empty) {
+        if (error) {
             alert("You already liked this schematic.");
             return;
         }
-
-        await addDoc(collection(db, "schematic_likes"), {
-            user_id: currentUser.uid,
-            schematic_id: id
-        });
 
         loadSchematics();
     }
 
     // ⭐ Delete schematic (admin only)
-    async function deleteSchematic(id, s) {
+    async function deleteSchematic(s) {
         if (!confirm("Are you sure you want to delete this schematic?")) return;
 
         // Delete image file
-        try {
-            await deleteObject(ref(storage, s.image));
-        } catch (err) {
-            console.warn("Image delete failed:", err);
-        }
+        await supabase.storage.from("images").remove([s.image.replace(/^.*\/storage\/v1\/object\/public\/images\//, "")]);
 
         // Delete schematic file
-        try {
-            await deleteObject(ref(storage, s.file));
-        } catch (err) {
-            console.warn("Schematic delete failed:", err);
-        }
+        await supabase.storage.from("schematics").remove([s.file.replace(/^.*\/storage\/v1\/object\/public\/schematics\//, "")]);
 
         // Delete metadata
-        await deleteDoc(doc(db, "schematics", id));
+        await supabase.from("schematics").delete().eq("id", s.id);
 
         // Delete likes
-        const likesSnap = await getDocs(
-            query(collection(db, "schematic_likes"), where("schematic_id", "==", id))
-        );
-        likesSnap.forEach(async (likeDoc) => {
-            await deleteDoc(doc(db, "schematic_likes", likeDoc.id));
-        });
+        await supabase.from("schematic_likes").delete().eq("schematic_id", s.id);
 
         alert("Schematic deleted.");
         loadSchematics();
     }
 
     // ⭐ Admin visibility
-    function applyAdminVisibility() {
+    async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
 
-        if (!currentProfile || currentProfile.role !== "admin") {
+        if (!currentUser || currentUser.user_metadata?.role !== "admin") {
             uploadTab.style.display = "none";
         }
     }
+
+    applyAdminVisibility();
 </script>
 
 </body>
 </html>
-
