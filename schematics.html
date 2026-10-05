@@ -18,9 +18,6 @@
             --bg: #f5f5f5;
             --card-bg: #ffffff;
             --text: #111;
-            --accent: #4CAF50;
-            --accent-red: #ff4444;
-            --accent-darkred: #aa0000;
         }
 
         body {
@@ -491,28 +488,31 @@
 
         await loadData();
     }
-async function deleteSchematic(s) {
-    if (!confirm("Are you sure you want to delete this schematic?")) return;
 
-    // Delete image file
-    const imagePath = s.image.replace("https://pnkwqqapyoaxdcpubpwb.supabase.co/storage/v1/object/public/", "");
-    await client.storage.from("images").remove([imagePath]);
+    async function deleteSchematic(s) {
+        if (!confirm("Are you sure you want to delete this schematic?")) return;
 
-    // Delete schematic file
-    const filePath = s.file.replace("https://pnkwqqapyoaxdcpubpwb.supabase.co/storage/v1/object/public/", "");
-    await client.storage.from("schematics").remove([filePath]);
+        const prefix = "https://pnkwqqapyoaxdcpubpwb.supabase.co/storage/v1/object/public/";
 
-    // Delete metadata
-    await client.from("schematics").delete().eq("id", s.id);
+        let imagePath = s.image;
+        if (imagePath.startsWith(prefix)) imagePath = imagePath.replace(prefix, "");
+        imagePath = imagePath.replace("public/", "").replace("images/", "");
+        imagePath = "images/" + imagePath;
 
-    // Delete likes
-    await client.from("schematic_likes").delete().eq("schematic_id", s.id);
+        let filePath = s.file;
+        if (filePath.startsWith(prefix)) filePath = filePath.replace(prefix, "");
+        filePath = filePath.replace("public/", "").replace("schematics/", "");
+        filePath = "schematics/" + filePath;
 
-    alert("Schematic deleted.");
-    await loadData();
-}
+        await client.storage.from("images").remove([imagePath]);
+        await client.storage.from("schematics").remove([filePath]);
 
-    
+        await client.from("schematics").delete().eq("id", s.id);
+        await client.from("schematic_likes").delete().eq("schematic_id", s.id);
+
+        alert("Schematic deleted.");
+        await loadData();
+    }
 
     async function applyAdminVisibility() {
         const uploadTab = document.getElementById("uploadTab");
@@ -566,3 +566,4 @@ async function deleteSchematic(s) {
 
 </body>
 </html>
+
