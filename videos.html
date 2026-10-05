@@ -1,395 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Videos - Prosper</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modpacks - Prosper</title>
+    <link rel="stylesheet" href="./style.css?v=22">
 
-<style>
-    body {
-        background-color: #0a0a0a;
-        color: #fff;
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        text-align: center;
-    }
+    <!-- Supabase UMD -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    h1.pixel {
-        font-size: 2.8rem;
-        background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-top: 0.8rem;
-    }
-
-    /* HOME BUTTON */
-    #homeBtn {
-        font-size: 1.4rem;
-        color: #E8C547;
-        cursor: pointer;
-        margin-top: 1rem;
-        margin-bottom: -1rem;
-    }
-
-    /* CATEGORY HUB */
-    #categoryHub {
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 3rem;
-        padding: 2rem 1rem;
-        transition: opacity 0.5s ease;
-    }
-
-    .category-card {
-        width: 420px;
-        height: 260px;
-        background: #111;
-        border-radius: 20px;
-        border: 5px solid transparent;
-        background-image: linear-gradient(#111, #111),
-            linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
-        background-origin: border-box;
-        background-clip: content-box, border-box;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 2.3rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .category-card:hover {
-        transform: scale(1.1);
-        box-shadow: 0 0 45px #C9A227;
-    }
-
-    /* INSIDE VIEW */
-    #insideView {
-        display: none;
-        opacity: 0;
-        transition: opacity 0.5s ease;
-        padding: 1rem 0;
-    }
-
-    #insideContent {
-        width: 95%;
-        margin: auto;
-    }
-
-    #backBtn {
-        font-size: 1.4rem;
-        margin-bottom: 1rem;
-        cursor: pointer;
-        color: #E8C547;
-        text-align: left;
-        width: 95%;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .section-title {
-        font-size: 2.2rem;
-        margin: 1rem 0;
-        background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    /* SLIDER */
-    .slider-container {
-        margin-bottom: 3rem;
-    }
-
-    .slider {
-        display: flex;
-        justify-content: center;
-        gap: 2rem;
-        padding: 1rem 0;
-        overflow-x: auto;
-    }
-
-    .slider::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* VIDEO CARDS */
-    .video-card {
-        min-width: 360px;
-        background: #111;
-        border-radius: 16px;
-        overflow: hidden;
-        cursor: pointer;
-        border: 4px solid transparent;
-        background-image: linear-gradient(#111, #111),
-            linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
-        background-origin: border-box;
-        background-clip: content-box, border-box;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .video-card:hover {
-        transform: scale(1.1);
-        box-shadow: 0 0 35px #C9A227;
-    }
-
-    .video-thumb {
-        width: 100%;
-        height: 240px;
-        object-fit: cover;
-    }
-
-    .video-info {
-        padding: 1rem;
-    }
-
-    .video-title {
-        font-size: 1.4rem;
-        font-weight: bold;
-        background: linear-gradient(90deg, #E8C547, #C9A227, #A67C00);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .video-creator {
-        font-size: 1.1rem;
-        color: #ccc;
-    }
-
-    /* MODAL */
-    .modal {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.85);
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-    }
-
-    .modal-content {
-        background: #111;
-        padding: 1rem;
-        border-radius: 10px;
-        max-width: 900px;
-        width: 90%;
-        border: 2px solid #E8C547;
-    }
-
-    .modal-close {
-        float: right;
-        font-size: 1.5rem;
-        cursor: pointer;
-        color: #E8C547;
-    }
-
-    iframe {
-        width: 100%;
-        height: 500px;
-        border: none;
-    }
-
-    /* BANNER */
-    .banner-container {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        margin: 10px 0 20px 0;
-    }
-
-    .banner-image {
-        width: 100%;
-        max-width: 1200px;
-        max-height: 260px;
-        object-fit: cover;
-        border: 4px solid #E8C547;
-        border-radius: 16px;
-    }
-</style>
+    <script>
+        const client = supabase.createClient(
+            "https://pnkwqqapyoaxdcpubpwb.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        );
+    </script>
 </head>
 
 <body>
+<div class="site">
 
-<h1 class="pixel">📺 Prosper Videos</h1>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo pixel">⛏️ Prosper</h1>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="modpacks.html" class="active">Modpacks</a></li>
+                <li><a href="schematics.html">Schematics</a></li>
+                <li><a href="videos.html">Videos</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
 
-<div id="homeBtn" onclick="location.href='index.html'">⬅ Home</div>
+                <!-- Admin-only -->
+                <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
 
-<!-- CATEGORY HUB -->
-<div id="categoryHub">
-    <div class="category-card" onclick="openCategory('crazycraft')">CrazyCraft</div>
-    <div class="category-card" onclick="openCategory('cobblemon')">Cobblemon</div>
-    <div class="category-card" onclick="openCategory('tutorials')">Tutorials</div>
-</div>
+                <li><a href="login.html">Login</a></li>
+            </ul>
+        </div>
+    </nav>
 
-<!-- INSIDE VIEW -->
-<div id="insideView">
-    <div id="backBtn" onclick="goBack()">← Back</div>
+    <main class="container fade-in">
+        <h1 class="pixel">📦 Modpacks</h1>
+        <p class="subtext">Download custom modpacks made by the team at prosper.</p>
 
-    <div id="bannerSpot"></div>
+        <div class="item-grid">
 
-    <h2 id="insideTitle" class="section-title"></h2>
-    <div id="insideContent"></div>
-</div>
+            <!-- COBBLEMONIC -->
+            <div class="item-card">
+                <img src="https://raw.githubusercontent.com/OatTheGoated/prosper/main/assets/cobblemonicpack.png"
+                     alt="Cobblemonic" class="item-img">
+                <h3 class="pixel">Cobblemonic</h3>
+                <p>Cobblemonic Pack as seen on Youtube, This is the pack from the Cobblemonic SMP.</p>
+                <a href="https://www.curseforge.com/minecraft/modpacks/cobblemonic" class="btn emerald" target="_blank">View on CurseForge</a>
+            </div>
 
-<!-- MODAL -->
-<div id="videoModal" class="modal">
-    <div class="modal-content">
-        <span class="modal-close" onclick="closeModal()">✖</span>
-        <iframe id="videoFrame" src="" allowfullscreen></iframe>
-    </div>
+            <!-- OATSPOKEPACK -->
+            <div class="item-card">
+                <img src="https://raw.githubusercontent.com/OatTheGoated/prosper/main/assets/pixelmonpack.png"
+                     alt="OatsPokePack" class="item-img">
+                <h3 class="pixel">OatsPokePack</h3>
+                <p>The cobblemonic predecessor, Designed for fun, made with love.</p>
+                <a href="https://www.curseforge.com/minecraft/modpacks/oatspokepack" class="btn emerald" target="_blank">View on CurseForge</a>
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Prosper. Made with ❤️ for Minecraft</p>
+    </footer>
+
 </div>
 
 <script>
-const crazycraft = {
-    "OatTheGoat": [
-        {id:"SCqH3f3Eyws", title:"Crazy Craft Is Back!!!"},
-        {id:"1NkML6ljVF4", title:"Stolen Steal?"},
-        {id:"j-6P1al5CCs", title:"Hiding Items with My Eyes"},
-        {id:"8to_n6dYBcU", title:"Building Heaven's Kitchen"}
-    ],
-    "Crowqe": [
-        {id:"8QQS7HjOJIE", title:"I Joined a Minecraft SMP but its on Craft Craft..."},
-        {id:"VljkxVIGYRk", title:"Signal Shenanigans"},
-        {id:"uUODDSPJ-2g", title:"Valley Building"},
-        {id:"DKl8yx2ytXk", title:"Trees and conspiracies"}
-    ],
-    "Cluck": [
-        {id:"UUsDq20GAoQ", title:"I Built this in a cave!"},
-        {id:"d3cXOOWj1-A", title:"The Return Of Pickles!!"},
-        {id:"V96iGVNEP1w", title:"Upgrades, rats and Dragons"},
-        {id:"aymQOS31wY8", title:"I Revived Dinosaurs In Minecraft"}
-    ]
-};
-
-const cobblemon = {
-    "OatTheGoat": [
-        {id:"V_iyvXQrhgg", title:"We just made the BEST Cobblemon experience"},
-        {id:"K043mMMi5Vw", title:"How I Became Cobblemon's Luckiest Player"},
-        {id:"-Cv7sl-uhMs", title:"How I Became Cobblemon's Unluckiest Player"},
-        {id:"XojOlNrDP4A", title:"I Built a Pub in Cobblemon And Got Way Too Drunk..."}
-    ],
-    "Crowqe": [
-        {id:"Ndlcw3Gfl_4", title:"I Joined the Cobblemonic Smp..."},
-        {id:"o0jfMdlmV6g", title:"Blood For The Mudkip"},
-        {id:"d4Rf41MRar4", title:"I Collected Every Berry In cobblemon"}
-        /* Duplicate removed */
-    ]
-};
-
-const tutorials = {
-    "Prosper": [
-        {id:"ufkKoSTg-wA", title:"How To Make Your Own Custom Oak Trees"},
-        {id:"s50sal6owuY", title:"How To Make A Custom Willow Tree"}
-    ]
-};
-
-function openCategory(cat) {
-    const hub = document.getElementById("categoryHub");
-    const inside = document.getElementById("insideView");
-
-    hub.style.opacity = 0;
-
-    setTimeout(() => {
-        hub.style.visibility = "hidden";
-        inside.style.visibility = "visible";
-        inside.style.display = "block";
-        setTimeout(() => inside.style.opacity = 1, 50);
-        loadCategory(cat);
-    }, 500);
-}
-
-function goBack() {
-    const hub = document.getElementById("categoryHub");
-    const inside = document.getElementById("insideView");
-
-    inside.style.opacity = 0;
-
-    setTimeout(() => {
-        inside.style.visibility = "hidden";
-        inside.style.display = "none";
-        hub.style.visibility = "visible";
-        setTimeout(() => hub.style.opacity = 1, 50);
-    }, 500);
-}
-
-function loadCategory(cat) {
-    const title = document.getElementById("insideTitle");
-    const content = document.getElementById("insideContent");
-    const bannerSpot = document.getElementById("bannerSpot");
-
-    content.innerHTML = "";
-    bannerSpot.innerHTML = "";
-
-    if (cat === "crazycraft") {
-        title.innerText = "CrazyCraft";
-        renderCreatorRows(crazycraft, content);
-    }
-
-    if (cat === "cobblemon") {
-        title.innerText = "Cobblemon";
-
-        bannerSpot.innerHTML = `
-            <div class="banner-container">
-                <img class="banner-image"
-                     src="https://raw.githubusercontent.com/OatTheGoated/prosper/main/assets/cobblemonbanner.png"
-                     alt="Cobblemon Banner">
-            </div>
-        `;
-
-        renderCreatorRows(cobblemon, content);
-    }
-
-    if (cat === "tutorials") {
-        title.innerText = "Tutorials";
-        renderCreatorRows(tutorials, content);
-    }
-}
-
-function renderCreatorRows(data, container) {
-    Object.keys(data).forEach(creator => {
-
-        const row = document.createElement("div");
-
-        row.innerHTML = `
-            <h3 class="section-title">${creator}</h3>
-            <div class="slider-container">
-                <div id="${creator}" class="slider"></div>
-            </div>
-        `;
-
-        container.appendChild(row);
-
-        const slider = document.getElementById(creator);
-
-        data[creator].forEach(video => {
-            const card = document.createElement("div");
-            card.className = "video-card";
-            card.onclick = () => openModal(video.id);
-
-            card.innerHTML = `
-                <img class="video-thumb" src="https://img.youtube.com/vi/${video.id}/maxresdefault.jpg">
-                <div class="video-info">
-                    <div class="video-title">${video.title}</div>
-                    <div class="video-creator">${creator}</div>
-                </div>
-            `;
-            slider.appendChild(card);
-        });
+window.addEventListener("load", () => {
+    document.querySelectorAll("img, iframe").forEach(el => {
+        if (el.complete) {
+            el.classList.add("loaded");
+        } else {
+            el.addEventListener("load", () => {
+                el.classList.add("loaded");
+            });
+        }
     });
-}
+});
+</script>
 
-function openModal(videoId) {
-    document.getElementById("videoModal").style.display = "flex";
-    document.getElementById("videoFrame").src = `https://www.youtube.com/embed/${videoId}`;
-}
-function closeModal() {
-    document.getElementById("videoModal").style.display = "none";
-    document.getElementById("videoFrame").src = "";
-}
+<!-- ⭐ ADMIN VISIBILITY -->
+<script>
+    async function applyAdminVisibility() {
+        const uploadTab = document.getElementById("uploadTab");
+
+        const { data: { user } } = await client.auth.getUser();
+        if (!user) {
+            uploadTab.style.display = "none";
+            return;
+        }
+
+        const { data: profile } = await client
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (!profile || profile.role !== "admin") {
+            uploadTab.style.display = "none";
+        }
+    }
+
+    applyAdminVisibility();
 </script>
 
 </body>
 </html>
+
 
