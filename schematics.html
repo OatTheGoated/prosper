@@ -69,15 +69,15 @@
         }
     </style>
 
-    <!-- Supabase UMD (works on GitHub Pages) -->
+    <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
+        const client = supabase.createClient(
+            "https://pnkwqqapyoaxdcpubpwb.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        );
 
-        // ⭐ FIX: use "client" instead of "supabase"
-        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentUser = null;
     </script>
 </head>
@@ -249,3 +249,4 @@
 
 </body>
 </html>
+
