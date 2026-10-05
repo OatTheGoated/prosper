@@ -5,15 +5,14 @@
     <title>Dashboard – Prosper</title>
     <link rel="stylesheet" href="./style.css?v=22">
 
-    <!-- Supabase UMD (works on GitHub Pages) -->
+    <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        const SUPABASE_URL = "https://pnkwqqapyoxadcpubpwb.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz";
-
-        // ⭐ FIX: use "client" instead of "supabase"
-        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const client = supabase.createClient(
+            "https://pnkwqqapyoaxdcpubpwb.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        );
     </script>
 </head>
 
@@ -75,37 +74,30 @@
             return;
         }
 
-        // Display basic info
         document.getElementById("emailDisplay").textContent = user.email;
         document.getElementById("idDisplay").textContent = user.id;
 
-        // Load profile from Supabase
-        const { data: profileData, error } = await client
+        const { data: profile } = await client
             .from("profiles")
             .select("*")
             .eq("id", user.id)
             .maybeSingle();
 
-        if (profileData) {
-            document.getElementById("usernameDisplay").textContent =
-                profileData.username || "Unknown";
+        if (profile) {
+            document.getElementById("usernameDisplay").textContent = profile.username || "Unknown";
 
-            if (profileData.pfp_url) {
-                document.getElementById("profilePic").src = profileData.pfp_url;
+            if (profile.pfp_url) {
+                document.getElementById("profilePic").src = profile.pfp_url;
             }
 
-            // Admin visibility
-            if (profileData.role !== "admin") {
+            if (profile.role !== "admin") {
                 document.getElementById("uploadTab").style.display = "none";
             }
-        } else {
-            document.getElementById("usernameDisplay").textContent = "Unknown";
         }
     }
 
     loadDashboard();
 
-    // Live preview of UUID avatar
     document.getElementById("mcUUID").addEventListener("input", () => {
         let uuid = document.getElementById("mcUUID").value.trim().replace(/-/g, "");
         if (uuid.length === 32) {
@@ -114,8 +106,7 @@
         }
     });
 
-    // Save profile picture
-    document.getElementById("savePfpBtn").addEventListener("click", async () => {
+    document.getElementById("savePfpBtn").onclick = async () => {
         let uuid = document.getElementById("mcUUID").value.trim().replace(/-/g, "");
         if (uuid.length !== 32) {
             alert("UUID must be exactly 32 characters.");
@@ -123,33 +114,25 @@
         }
 
         const { data: { user } } = await client.auth.getUser();
-        if (!user) {
-            alert("You must be logged in.");
-            return;
-        }
+        if (!user) return;
 
         const pfpURL = `https://crafatar.com/avatars/${uuid}?size=128&overlay`;
 
-        const { error } = await client
+        await client
             .from("profiles")
             .update({ pfp_url: pfpURL })
             .eq("id", user.id);
 
-        if (error) {
-            alert("Failed to update profile picture.");
-            return;
-        }
-
         document.getElementById("profilePic").src = pfpURL;
         alert("Profile picture updated!");
-    });
+    };
 
-    // Logout
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
+    document.getElementById("logoutBtn").onclick = async () => {
         await client.auth.signOut();
         window.location.href = "index.html";
-    });
+    };
 </script>
 
 </body>
 </html>
+
