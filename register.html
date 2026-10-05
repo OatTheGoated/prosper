@@ -14,60 +14,59 @@
         <input id="email" type="email" placeholder="Email">
         <input id="password" type="password" placeholder="Password">
         <input id="username" type="text" placeholder="Username">
-        <button onclick="register()">Register</button>
+        <button id="registerBtn">Register</button>
         <p id="msg"></p>
     </div>
 </div>
 
 <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+    import { auth, db } from "./firebase-config.js";
+    import { createUserWithEmailAndPassword }
+        from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+    import {
+        doc,
+        setDoc
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9zZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
-    );
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const usernameInput = document.getElementById("username");
+    const registerBtn = document.getElementById("registerBtn");
+    const msg = document.getElementById("msg");
 
-    async function register() {
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-        const username = document.getElementById("username").value;
-        const msg = document.getElementById("msg");
+    registerBtn.addEventListener("click", async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+        const username = usernameInput.value.trim();
+
+        if (!email || !password || !username) {
+            msg.textContent = "Please fill in all fields.";
+            return;
+        }
 
         msg.textContent = "Creating account...";
 
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password
-        });
+        try {
+            // Create Firebase Auth user
+            const userCred = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCred.user;
 
-        if (error) {
-            msg.textContent = error.message;
-            return;
-        }
-
-        const user = data.user;
-
-        const { error: profileError } = await supabase
-            .from("profiles")
-            .insert({
-                id: user.id,
+            // Save username + role in Firestore
+            await setDoc(doc(db, "profiles", user.uid), {
                 username: username,
+                email: email,
                 role: "user"
             });
 
-        if (profileError) {
-            msg.textContent = profileError.message;
-            return;
+            msg.textContent = "Account created! Redirecting...";
+            setTimeout(() => {
+                window.location.href = "login.html";
+            }, 1500);
+
+        } catch (err) {
+            msg.textContent = err.message;
         }
-
-        msg.textContent = "Account created! Redirecting...";
-        setTimeout(() => {
-            window.location.href = "login.html";
-        }, 1500);
-    }
-
-    // Make the function visible to the button
-    window.register = register;
+    });
 </script>
 
 </body>
