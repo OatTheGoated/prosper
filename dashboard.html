@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard – Prosper</title>
-    <link rel="stylesheet" href="./style.css?v=22">
+    <link rel="stylesheet" href="./style.css?v=23">
 
     <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,57 +17,54 @@
 </head>
 
 <body>
-<div class="site">
 
-    <nav class="navbar">
-        <div class="container">
-            <h1 class="logo pixel">⛏️ Prosper</h1>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="modpacks.html">Modpacks</a></li>
-                <li><a href="schematics.html">Schematics</a></li>
-                <li><a href="videos.html">Videos</a></li>
-                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <h2 class="pixel">⛏️ Prosper</h2>
 
-                <!-- Admin-only -->
-                <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
-            </ul>
-        </div>
-    </nav>
+    <a href="index.html">Home</a>
+    <a href="modpacks.html">Modpacks</a>
+    <a href="schematics.html">Schematics</a>
+    <a href="videos.html">Videos</a>
+    <a href="dashboard.html" class="active">Dashboard</a>
 
-    <section class="hero" style="margin-top:40px;">
-        <h1 class="pixel">Your Dashboard</h1>
+    <!-- Admin-only -->
+    <a href="/prosper/admin/upload.html" id="uploadTab">Upload</a>
 
-        <div class="auth-box">
-            <h3 class="pixel-small">Account Info</h3>
-            <p>Email: <span id="emailDisplay"></span></p>
-            <p>User ID: <span id="idDisplay"></span></p>
-            <p>Username: <span id="usernameDisplay"></span></p>
+    <button id="logoutBtn" class="sidebar-logout">Logout</button>
+</div>
 
-            <h3 class="pixel-small" style="margin-top:20px;">Profile Picture</h3>
-            <img id="profilePic" src="" alt="Profile Picture" style="width:128px; border-radius:8px; margin-bottom:10px;">
+<!-- MAIN CONTENT -->
+<div class="main-content">
 
-            <label class="pixel-small" style="margin-bottom:6px; display:block;">
-                Enter your Minecraft UUID (32 characters, no dashes):
-            </label>
+    <h1 class="pixel" style="margin-bottom:20px;">Your Dashboard</h1>
 
-            <input id="mcUUID" placeholder="2982b204842f4220a668f73fa9822c6d">
+    <div class="auth-box">
 
-            <button class="btn-red" id="savePfpBtn" style="margin-top:10px;">
-                Save Profile Picture
-            </button>
+        <h3 class="pixel-small">Account Info</h3>
+        <p>Email: <span id="emailDisplay"></span></p>
+        <p>User ID: <span id="idDisplay"></span></p>
+        <p>Username: <span id="usernameDisplay"></span></p>
 
-            <button class="btn-red" id="logoutBtn" style="margin-top:20px;">
-                Logout
-            </button>
-        </div>
-    </section>
+        <h3 class="pixel-small" style="margin-top:20px;">Profile Picture</h3>
+        <img id="profilePic" src="" alt="Profile Picture" class="pfp-img">
+
+        <label class="pixel-small" style="margin-bottom:6px; display:block;">
+            Enter your Minecraft UUID (32 characters, no dashes):
+        </label>
+
+        <input id="mcUUID" placeholder="2982b204842f4220a668f73fa9822c6d">
+
+        <button class="btn-red" id="savePfpBtn" style="margin-top:10px;">
+            Save Profile Picture
+        </button>
+
+    </div>
 
 </div>
 
 <script>
     async function loadDashboard() {
-        // Use getSession() so metadata is always loaded
         const { data: { session } } = await client.auth.getSession();
 
         if (!session) {
@@ -77,11 +74,9 @@
 
         const user = session.user;
 
-        // Display basic info
         document.getElementById("emailDisplay").textContent = user.email;
         document.getElementById("idDisplay").textContent = user.id;
 
-        // Load profile table (username + pfp only)
         const { data: profile } = await client
             .from("profiles")
             .select("*")
@@ -94,9 +89,12 @@
             if (profile.pfp_url) {
                 document.getElementById("profilePic").src = profile.pfp_url;
             }
+
+            if (profile.mc_uuid) {
+                document.getElementById("mcUUID").value = profile.mc_uuid;
+            }
         }
 
-        // ⭐ Correct admin check using Supabase metadata
         if (!user.user_metadata || user.user_metadata.role !== "admin") {
             document.getElementById("uploadTab").style.display = "none";
         }
@@ -113,7 +111,7 @@
         }
     });
 
-    // Save profile picture
+    // Save profile picture + UUID
     document.getElementById("savePfpBtn").onclick = async () => {
         let uuid = document.getElementById("mcUUID").value.trim().replace(/-/g, "");
         if (uuid.length !== 32) {
@@ -129,7 +127,7 @@
 
         await client
             .from("profiles")
-            .update({ pfp_url: pfpURL })
+            .update({ pfp_url: pfpURL, mc_uuid: uuid })
             .eq("id", user.id);
 
         document.getElementById("profilePic").src = pfpURL;
