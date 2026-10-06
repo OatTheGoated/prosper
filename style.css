@@ -70,152 +70,7 @@ img.loaded {
 }
 
 /* =========================================================
-   HAMBURGER + SLIDE-IN SIDEBAR (DASHBOARD)
-========================================================= */
-
-/* Hamburger button */
-.hamburger {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    width: 32px;
-    height: 26px;
-    cursor: pointer;
-    z-index: 200;
-}
-
-.hamburger span {
-    display: block;
-    height: 4px;
-    background: var(--red-light);
-    margin: 5px 0;
-    border-radius: 4px;
-    transition: 0.3s;
-}
-
-/* Sidebar (hidden by default) */
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: -260px;
-    width: 230px;
-    height: 100%;
-    background: #0d0d0d;
-    border-right: 1px solid rgba(255, 0, 0, 0.25);
-    padding: 20px;
-    box-shadow: 4px 0 15px rgba(255, 0, 0, 0.15);
-    transition: 0.35s ease;
-    z-index: 150;
-}
-
-.sidebar.open {
-    left: 0;
-}
-
-.sidebar h2 {
-    color: var(--red-light);
-    margin-bottom: 20px;
-}
-
-.sidebar a {
-    display: block;
-    margin: 12px 0;
-    color: #ccc;
-    text-decoration: none;
-    font-family: 'Minecraft', 'Minecraftia', sans-serif;
-    transition: var(--transition);
-}
-
-.sidebar a:hover {
-    color: var(--red-light);
-    text-shadow: 0 0 8px var(--red-light);
-}
-
-.sidebar .active {
-    color: var(--red);
-    font-weight: bold;
-}
-
-/* Sidebar logout button */
-.sidebar-logout {
-    margin-top: 30px;
-    width: 100%;
-    padding: 10px;
-    background: rgba(255, 0, 0, 0.15);
-    border: 2px solid rgba(255, 0, 0, 0.6);
-    color: var(--red-light);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.sidebar-logout:hover {
-    background: rgba(255, 0, 0, 0.35);
-    border-color: var(--red);
-    color: #ff7777;
-    transform: translateY(-4px);
-}
-
-/* Dark overlay when sidebar is open */
-#overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(3px);
-    display: none;
-    z-index: 120;
-}
-
-#overlay.show {
-    display: block;
-}
-
-/* Main content */
-.main-content {
-    margin-left: 0;
-    padding: 40px;
-}
-
-/* Dashboard profile image */
-.pfp-img {
-    width: 128px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    border: 2px solid var(--red-light);
-}
-
-/* Dashboard input fields */
-input {
-    background: #0d0d0d;
-    border: 1px solid var(--red-light);
-    color: #fff;
-    padding: 10px;
-    border-radius: 6px;
-    width: 100%;
-    margin-top: 6px;
-}
-
-input:focus {
-    outline: none;
-    box-shadow: 0 0 10px var(--red-light);
-}
-
-/* Dashboard card */
-.auth-box {
-    background: var(--card-bg);
-    border: 1px solid rgba(255, 0, 0, 0.35);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    width: 420px;
-    box-shadow: 0 0 20px rgba(255, 0, 0, 0.25);
-    backdrop-filter: blur(6px);
-}
-
-/* =========================================================
-   NAVBAR (unchanged for other pages)
+   NAVBAR
 ========================================================= */
 
 .navbar {
@@ -565,4 +420,126 @@ footer {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* =========================================================
+   DASHBOARD SIDEBAR + HAMBURGER (SAFE, ISOLATED)
+========================================================= */
+
+.hamburger {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 32px;
+    height: 26px;
+    cursor: pointer;
+    z-index: 200;
+}
+
+.hamburger span {
+    display: block;
+    height: 4px;
+    background: var(--red-light);
+    margin: 5px 0;
+    border-radius: 4px;
+    transition: 0.3s;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px;
+    width: 230px;
+    height: 100%;
+    background: #0d0d0d;
+    border-right: 1px solid rgba(255, 0, 0, 0.25);
+    padding: 20px;
+    box-shadow: 4px 0 15px rgba(255, 0, 0, 0.15);
+    transition: 0.35s ease;
+    z-index: 150;
+}
+
+.sidebar.open {
+    left: 0;
+}
+
+.sidebar h2 {
+    color: var(--red-light);
+    margin-bottom: 20px;
+}
+
+.sidebar a {
+    display: block;
+    margin: 12px 0;
+    color: #ccc;
+    text-decoration: none;
+    font-family: 'Minecraft', 'Minecraftia', sans-serif;
+    transition: var(--transition);
+}
+
+.sidebar a:hover {
+    color: var(--red-light);
+    text-shadow: 0 0 8px var(--red-light);
+}
+
+.sidebar .active {
+    color: var(--red);
+    font-weight: bold;
+}
+
+.sidebar-logout {
+    margin-top: 30px;
+    width: 100%;
+    padding: 10px;
+    background: rgba(255, 0, 0, 0.15);
+    border: 2px solid rgba(255, 0, 0, 0.6);
+    color: var(--red-light);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.sidebar-logout:hover {
+    background: rgba(255, 0, 0, 0.35);
+    border-color: var(--red);
+    color: #ff7777;
+    transform: translateY(-4px);
+}
+
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(3px);
+    display: none;
+    z-index: 120;
+}
+
+#overlay.show {
+    display: block;
+}
+
+.main-content {
+    margin-left: 0;
+    padding: 40px;
+}
+
+.pfp-img {
+    width: 128px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 2px solid var(--red-light);
+}
+
+.auth-box {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 0, 0, 0.35);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    width: 420px;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.25);
+    backdrop-filter: blur(6px);
 }
