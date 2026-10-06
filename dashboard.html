@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard – Prosper</title>
-    <link rel="stylesheet" href="./style.css?v=24">
+    <link rel="stylesheet" href="./style.css?v=25">
 
     <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -18,49 +18,31 @@
 
 <body>
 
-<!-- HAMBURGER BUTTON -->
+<!-- HAMBURGER MENU -->
 <div class="hamburger" id="hamburgerBtn">
     <span></span>
     <span></span>
     <span></span>
 </div>
 
-<!-- SIDEBAR (hidden until opened) -->
+<!-- SIDEBAR (Dashboard content inside) -->
 <div class="sidebar" id="sidebar">
+
     <h2 class="pixel">⛏️ Prosper</h2>
 
-    <a href="index.html">Home</a>
-    <a href="modpacks.html">Modpacks</a>
-    <a href="schematics.html">Schematics</a>
-    <a href="videos.html">Videos</a>
-    <a href="dashboard.html" class="active">Dashboard</a>
-
-    <!-- Admin-only -->
-    <a href="/prosper/admin/upload.html" id="uploadTab">Upload</a>
-
-    <button id="logoutBtn" class="sidebar-logout">Logout</button>
-</div>
-
-<!-- DARK OVERLAY WHEN SIDEBAR IS OPEN -->
-<div id="overlay"></div>
-
-<!-- MAIN CONTENT -->
-<div class="main-content">
-
-    <h1 class="pixel" style="margin-bottom:20px;">Your Dashboard</h1>
-
-    <div class="auth-box">
-
+    <div class="sidebar-section">
         <h3 class="pixel-small">Account Info</h3>
         <p>Email: <span id="emailDisplay"></span></p>
         <p>User ID: <span id="idDisplay"></span></p>
         <p>Username: <span id="usernameDisplay"></span></p>
+    </div>
 
-        <h3 class="pixel-small" style="margin-top:20px;">Profile Picture</h3>
-        <img id="profilePic" src="" alt="Profile Picture" class="pfp-img">
+    <div class="sidebar-section">
+        <h3 class="pixel-small">Profile Picture</h3>
+        <img id="profilePic" class="pfp-img" src="" alt="Profile Picture">
 
-        <label class="pixel-small" style="margin-bottom:6px; display:block;">
-            Enter your Minecraft UUID (32 characters, no dashes):
+        <label class="pixel-small" style="margin-top:10px; display:block;">
+            Enter your Minecraft UUID:
         </label>
 
         <input id="mcUUID" placeholder="2982b204842f4220a668f73fa9822c6d">
@@ -68,25 +50,42 @@
         <button class="btn-red" id="savePfpBtn" style="margin-top:10px;">
             Save Profile Picture
         </button>
-
     </div>
 
+    <button id="logoutBtn" class="sidebar-logout" style="margin-top:30px;">
+        Logout
+    </button>
+
+</div>
+
+<!-- DARK OVERLAY -->
+<div id="overlay"></div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+    <h1 class="pixel">Dashboard</h1>
+    <p class="pixel-small">Use the menu to manage your account.</p>
 </div>
 
 <script>
     async function loadDashboard() {
         const { data: { session } } = await client.auth.getSession();
 
+        // Prevent access if not logged in
         if (!session) {
+            document.getElementById("sidebar").style.display = "none";
+            document.getElementById("hamburgerBtn").style.display = "none";
             window.location.href = "login.html";
             return;
         }
 
         const user = session.user;
 
+        // Fill account info
         document.getElementById("emailDisplay").textContent = user.email;
         document.getElementById("idDisplay").textContent = user.id;
 
+        // Load profile table
         const { data: profile } = await client
             .from("profiles")
             .select("*")
@@ -94,7 +93,8 @@
             .maybeSingle();
 
         if (profile) {
-            document.getElementById("usernameDisplay").textContent = profile.username || "Unknown";
+            document.getElementById("usernameDisplay").textContent =
+                profile.username || "Unknown";
 
             if (profile.pfp_url) {
                 document.getElementById("profilePic").src = profile.pfp_url;
@@ -103,10 +103,6 @@
             if (profile.mc_uuid) {
                 document.getElementById("mcUUID").value = profile.mc_uuid;
             }
-        }
-
-        if (!user.user_metadata || user.user_metadata.role !== "admin") {
-            document.getElementById("uploadTab").style.display = "none";
         }
     }
 
@@ -168,5 +164,4 @@
 
 </body>
 </html>
-
 
