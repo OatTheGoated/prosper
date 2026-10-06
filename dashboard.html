@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard – Prosper</title>
-    <link rel="stylesheet" href="./style.css?v=23">
+    <link rel="stylesheet" href="./style.css?v=24">
 
     <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -18,8 +18,15 @@
 
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
+<!-- HAMBURGER BUTTON -->
+<div class="hamburger" id="hamburgerBtn">
+    <span></span>
+    <span></span>
+    <span></span>
+</div>
+
+<!-- SIDEBAR (hidden until opened) -->
+<div class="sidebar" id="sidebar">
     <h2 class="pixel">⛏️ Prosper</h2>
 
     <a href="index.html">Home</a>
@@ -33,6 +40,9 @@
 
     <button id="logoutBtn" class="sidebar-logout">Logout</button>
 </div>
+
+<!-- DARK OVERLAY WHEN SIDEBAR IS OPEN -->
+<div id="overlay"></div>
 
 <!-- MAIN CONTENT -->
 <div class="main-content">
@@ -138,6 +148,21 @@
     document.getElementById("logoutBtn").onclick = async () => {
         await client.auth.signOut();
         window.location.href = "index.html";
+    };
+
+    // SIDEBAR TOGGLE
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("overlay");
+    const hamburger = document.getElementById("hamburgerBtn");
+
+    hamburger.onclick = () => {
+        sidebar.classList.add("open");
+        overlay.classList.add("show");
+    };
+
+    overlay.onclick = () => {
+        sidebar.classList.remove("open");
+        overlay.classList.remove("show");
     };
 </script>
 
