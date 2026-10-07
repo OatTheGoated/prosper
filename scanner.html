@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>Schematic Scanner – ProsperMC</title>
 
-    <!-- WORKING NBT PARSER -->
-    <script src="https://schem.io/lib/nbt.js"></script>
+    <!-- Load custom browser NBT parser -->
+    <script src="nbt-browser.js"></script>
 
     <style>
         body {
@@ -151,7 +151,7 @@ async function scanSchematic() {
 
     const buffer = await file.arrayBuffer();
 
-    // WORKING NBT PARSE
+    // Parse using custom browser NBT parser
     const data = NBT.read(buffer);
     const v = data.value;
 
