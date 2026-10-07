@@ -5,7 +5,7 @@
     <title>Schematic Scanner – ProsperMC</title>
 
     <!-- WORKING NBT PARSER -->
-    <script src="https://unpkg.com/nbt-ts@1.0.3/dist/nbt-ts.min.js"></script>
+    <script src="https://schem.io/lib/nbt.js"></script>
 
     <style>
         body {
@@ -152,7 +152,7 @@ async function scanSchematic() {
     const buffer = await file.arrayBuffer();
 
     // WORKING NBT PARSE
-    const data = NBT.parse(buffer);
+    const data = NBT.read(buffer);
     const v = data.value;
 
     // Dimensions
@@ -262,4 +262,5 @@ function downloadReport() {
 
 </body>
 </html>
+
 
