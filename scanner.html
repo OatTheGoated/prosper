@@ -1,1 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Schematic Scanner – ProsperMC</title>
+
+    <!-- NBT Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/nbt@1.0.0/dist/nbt.min.js"></script>
+
+    <style>
+        body {
+            background: #111;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background:#000;
+            padding:10px 20px;
+        }
+
+        .navbar .container {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+        }
+
+        .nav-links {
+            list-style:none;
+            display:flex;
+            gap:20px;
+            padding:0;
+            margin:0;
+        }
+
+        .nav-links a {
+            color:#fff;
+            text-decoration:none;
+        }
+
+        .nav-links a.active {
+            text-decoration:underline;
+        }
+
+        h1 {
+            text-align:center;
+            padding:20px;
+            font-size:32px;
+        }
+
+        .scanner-box {
+            width: 90%;
+            max-width: 800px;
+            margin: auto;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px solid #4db8ff;
+            box-shadow: 0 0 15px #4db8ff;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            background: #222;
+            border: 2px solid #333;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4db8ff;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            color: #000;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .results {
+            margin-top: 20px;
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #4db8ff;
+        }
+
+        .block-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #222;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #333;
+        }
+
+        .download-btn {
+            background: #4CAF50;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <h1 class="logo pixel">⛏️ Prosper</h1>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="modpacks.html">Modpacks</a></li>
+            <li><a href="schematics.html">Schematics</a></li>
+            <li><a href="videos.html">Videos</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="/prosper/admin/upload.html">Upload</a></li>
+            <li><a href="scanner.html" class="active">Scanner</a></li>
+        </ul>
+    </div>
+</nav>
+
+<h1>Schematic Scanner</h1>
+
+<div class="scanner-box">
+    <input type="file" id="schemInput">
+
+    <button onclick="scanSchematic()">Scan Schematic</button>
+
+    <div id="results" class="results" style="display:none;"></div>
+
+    <button id="downloadBtn" class="download-btn" style="display:none;" onclick="downloadReport()">
+        Download Report (.txt)
+    </button>
+</div>
+
+<script>
+let scanData = {};
+
+function scanSchematic() {
+    const file = document.getElementById("schemInput").files[0];
+    if (!file) {
+        alert("Upload a .schem or .litematic file.");
+        return;
+    }
+
+    file.arrayBuffer().then(buffer => {
+        nbt.parse(new Uint8Array(buffer), (err, data) => {
+            if (err) {
+                alert("Error reading schematic.");
+                return;
+            }
+
+            const v = data.value;
+
+            // Dimensions
+            const width = v.Width?.value || v.size?.value?.x || 0;
+            const height = v.Height?.value || v.size?.value?.y || 0;
+            const length = v.Length?.value || v.size?.value?.z || 0;
+
+            const volume = width * height * length;
+
+            // Palette + BlockData
+            const palette = v.Palette?.value || v.palette?.value || {};
+            const blockData = v.BlockData?.value || v.blocks?.value || [];
+
+            let solidCount = 0;
+            let blockCounts = {};
+
+            for (let i = 0; i < blockData.length; i++) {
+                const id = blockData[i];
+                const blockName = palette[id]?.value || "unknown";
+
+                if (!blockCounts[blockName]) blockCounts[blockName] = 0;
+                blockCounts[blockName]++;
+
+                if (
+                    blockName !== "minecraft:air" &&
+                    blockName !== "minecraft:void_air" &&
+                    blockName !== "minecraft:cave_air"
+                ) {
+                    solidCount++;
+                }
+            }
+
+            // Most used block
+            let mostUsed = { name: "None", count: 0 };
+            for (const b in blockCounts) {
+                if (blockCounts[b] > mostUsed.count) {
+                    mostUsed = { name: b, count: blockCounts[b] };
+                }
+            }
+
+            // Entity count
+            const entities = v.Entities?.value || [];
+            const entityCount = entities.length;
+
+            // Save for download
+            scanData = {
+                width, height, length, volume,
+                solidCount,
+                airCount: volume - solidCount,
+                mostUsed,
+                blockCounts,
+                entityCount
+            };
+
+            displayResults();
+        });
+    });
+}
+
+function displayResults() {
+    const r = document.getElementById("results");
+    r.style.display = "block";
+
+    r.innerHTML = `
+        <h2>Results</h2>
+        <p><strong>Dimensions:</strong> ${scanData.width} × ${scanData.height} × ${scanData.length}</p>
+        <p><strong>Total Volume (with air):</strong> ${scanData.volume.toLocaleString()}</p>
+        <p><strong>Solid Blocks:</strong> ${scanData.solidCount.toLocaleString()}</p>
+        <p><strong>Air Blocks:</strong> ${scanData.airCount.toLocaleString()}</p>
+        <p><strong>Most Used Block:</strong> ${scanData.mostUsed.name} (${scanData.mostUsed.count})</p>
+        <p><strong>Tile Entities:</strong> ${scanData.entityCount}</p>
+
+        <h3>Block List</h3>
+        <div class="block-list">
+            ${Object.entries(scanData.blockCounts)
+                .map(([name, count]) => `<p>${name}: ${count}</p>`)
+                .join("")}
+        </div>
+    `;
+
+    document.getElementById("downloadBtn").style.display = "block";
+}
+
+function downloadReport() {
+    let txt = `Schematic Analysis\n------------------\n`;
+    txt += `Dimensions: ${scanData.width} × ${scanData.height} × ${scanData.length}\n`;
+    txt += `Total Volume: ${scanData.volume}\n`;
+    txt += `Solid Blocks: ${scanData.solidCount}\n`;
+    txt += `Air Blocks: ${scanData.airCount}\n`;
+    txt += `Most Used Block: ${scanData.mostUsed.name} (${scanData.mostUsed.count})\n`;
+    txt += `Tile Entities: ${scanData.entityCount}\n\n`;
+    txt += `Block List:\n`;
+
+    for (const b in scanData.blockCounts) {
+        txt += `- ${b}: ${scanData.blockCounts[b]}\n`;
+    }
+
+    const blob = new Blob([txt], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "schematic_report.txt";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
 
