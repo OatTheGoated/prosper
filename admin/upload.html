@@ -8,13 +8,6 @@
     <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script>
-        const client = supabase.createClient(
-            "https://pnkwqqapyoaxdcpubpwb.supabase.co",
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
-        );
-    </script>
-
     <style>
         /* ⭐ CLEAN ALIGNED UPLOAD FORM */
         .upload-container {
@@ -150,6 +143,15 @@
                 <label>Schematic File (.schem / .litematic)</label>
                 <input id="schemFile" type="file">
 
+                <!-- ⭐ Block Count Display -->
+                <div id="blockCountDisplay" style="
+                    grid-column: 1 / 3;
+                    margin-top: 10px;
+                    font-size: 1.2rem;
+                    color: #4db8ff;
+                    text-shadow: 0 0 8px #4db8ff;
+                ">Solid Blocks: (upload a file)</div>
+
                 <label>Preview Image (.webp)</label>
                 <input id="imageFile" type="file">
 
@@ -173,10 +175,17 @@
     </div>
 </div>
 
-<script>
-    let currentUser = null;
+<!-- ⭐ MODULE SCRIPT -->
+<script type="module">
+    const client = supabase.createClient(
+        "https://pnkwqqapyoaxdcpubpwb.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+    );
 
-    // ⭐ ADMIN CHECK + AUTO-DETECT AUTHOR
+    let currentUser = null;
+    let solidBlockCount = 0;
+
+    // ⭐ ADMIN CHECK
     async function checkAdmin() {
         const { data: { session } } = await client.auth.getSession();
 
@@ -229,6 +238,52 @@
         }
     }
 
+    // ⭐ BLOCK COUNT SCANNER (NO AIR)
+    import("https://cdn.jsdelivr.net/npm/nbt@1.0.0/dist/nbt.min.js").then(nbt => {
+
+        document.getElementById("schemFile").addEventListener("change", async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = new Uint8Array(arrayBuffer);
+
+            nbt.parse(buffer, (err, data) => {
+                if (err) {
+                    document.getElementById("blockCountDisplay").innerText =
+                        "Error reading schematic.";
+                    return;
+                }
+
+                const schem = data.value;
+
+                const palette = schem.Palette.value;
+                const blockData = schem.BlockData.value;
+
+                let count = 0;
+
+                for (let i = 0; i < blockData.length; i++) {
+                    const id = blockData[i];
+                    const blockName = palette[id].value;
+
+                    if (
+                        blockName !== "minecraft:air" &&
+                        blockName !== "minecraft:void_air" &&
+                        blockName !== "minecraft:cave_air"
+                    ) {
+                        count++;
+                    }
+                }
+
+                solidBlockCount = count;
+
+                document.getElementById("blockCountDisplay").innerText =
+                    `Solid Blocks: ${solidBlockCount.toLocaleString()}`;
+            });
+        });
+
+    });
+
     // ⭐ UPLOAD HANDLER
     document.getElementById("uploadBtn").onclick = async () => {
         if (!currentUser) {
@@ -257,7 +312,7 @@
         // ⭐ Auto-detected author
         const author = currentUser.email;
 
-        // ⭐ Upload schematic (WORKING PATH)
+        // ⭐ Upload schematic
         const schemPath = `${Date.now()}_${schemFile.name}`;
         const { error: schemErr } = await client.storage
             .from("schematics")
@@ -276,7 +331,7 @@
             .from("schematics")
             .getPublicUrl(schemPath).data.publicUrl;
 
-        // ⭐ Upload image (WORKING PATH)
+        // ⭐ Upload image
         const imagePath = `${Date.now()}_${imageFile.name}`;
         const { error: imgErr } = await client.storage
             .from("images")
@@ -295,7 +350,7 @@
             .from("images")
             .getPublicUrl(imagePath).data.publicUrl;
 
-        // ⭐ Insert metadata (automatic author)
+        // ⭐ Insert metadata + block count
         const { error: dbErr } = await client
             .from("schematics")
             .insert({
@@ -306,6 +361,7 @@
                 image: imageURL,
                 author: author,
                 uploaded_by: currentUser.id,
+                block_count: solidBlockCount,   // ⭐ SAVED HERE
                 created_at: new Date().toISOString()
             });
 
@@ -340,4 +396,3 @@
 
 </body>
 </html>
-
