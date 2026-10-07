@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <title>Schematic Scanner – ProsperMC</title>
 
-    <!-- Load custom browser NBT parser -->
+    <!-- GZIP/ZLIB decompressor -->
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+
+    <!-- Custom browser NBT parser -->
     <script src="nbt-browser.js"></script>
 
     <style>
@@ -151,8 +154,17 @@ async function scanSchematic() {
 
     const buffer = await file.arrayBuffer();
 
-    // Parse using custom browser NBT parser
-    const data = NBT.read(buffer);
+    // decompress GZIP/ZLIB
+    let decompressed;
+    try {
+        decompressed = pako.inflate(new Uint8Array(buffer)).buffer;
+    } catch (e) {
+        alert("File is not a valid schematic or is corrupted.");
+        return;
+    }
+
+    // parse NBT
+    const data = NBT.read(decompressed);
     const v = data.value;
 
     // Dimensions
@@ -262,5 +274,3 @@ function downloadReport() {
 
 </body>
 </html>
-
-
