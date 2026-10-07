@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>Schematic Scanner – ProsperMC</title>
 
-    <!-- Correct NBT Parser -->
-    <script src="https://cdn.jsdelivr.net/npm/prismarine-nbt@2.2.0/dist/nbt-browser.min.js"></script>
+    <!-- WORKING NBT PARSER -->
+    <script src="https://unpkg.com/nbt-ts@1.0.3/dist/nbt-ts.min.js"></script>
 
     <style>
         body {
@@ -151,9 +151,9 @@ async function scanSchematic() {
 
     const buffer = await file.arrayBuffer();
 
-    // FIXED: prismarine-nbt parsing
-    const data = await prismarineNbt.parse(buffer);
-    const v = data.parsed.value;
+    // WORKING NBT PARSE
+    const data = NBT.parse(buffer);
+    const v = data.value;
 
     // Dimensions
     const width = v.Width?.value || v.size?.value?.x || 0;
@@ -262,3 +262,4 @@ function downloadReport() {
 
 </body>
 </html>
+
