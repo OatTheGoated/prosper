@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>Schematic Scanner – ProsperMC</title>
 
-    <!-- NBT Parser -->
-    <script src="https://cdn.jsdelivr.net/npm/nbt@1.0.0/dist/nbt.min.js"></script>
+    <!-- FIXED: Correct NBT Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/prismarine-nbt@2.2.0/dist/nbt-browser.min.js"></script>
 
     <style>
         body {
@@ -150,68 +150,63 @@ function scanSchematic() {
     }
 
     file.arrayBuffer().then(buffer => {
-        nbt.parse(new Uint8Array(buffer), (err, data) => {
-            if (err) {
-                alert("Error reading schematic.");
-                return;
+        const data = nbt.parse(buffer);
+
+        const v = data.value;
+
+        // Dimensions
+        const width = v.Width?.value || v.size?.value?.x || 0;
+        const height = v.Height?.value || v.size?.value?.y || 0;
+        const length = v.Length?.value || v.size?.value?.z || 0;
+
+        const volume = width * height * length;
+
+        // Palette + BlockData
+        const palette = v.Palette?.value || v.palette?.value || {};
+        const blockData = v.BlockData?.value || v.blocks?.value || [];
+
+        let solidCount = 0;
+        let blockCounts = {};
+
+        for (let i = 0; i < blockData.length; i++) {
+            const id = blockData[i];
+            const blockName = palette[id]?.value || "unknown";
+
+            if (!blockCounts[blockName]) blockCounts[blockName] = 0;
+            blockCounts[blockName]++;
+
+            if (
+                blockName !== "minecraft:air" &&
+                blockName !== "minecraft:void_air" &&
+                blockName !== "minecraft:cave_air"
+            ) {
+                solidCount++;
             }
+        }
 
-            const v = data.value;
-
-            // Dimensions
-            const width = v.Width?.value || v.size?.value?.x || 0;
-            const height = v.Height?.value || v.size?.value?.y || 0;
-            const length = v.Length?.value || v.size?.value?.z || 0;
-
-            const volume = width * height * length;
-
-            // Palette + BlockData
-            const palette = v.Palette?.value || v.palette?.value || {};
-            const blockData = v.BlockData?.value || v.blocks?.value || [];
-
-            let solidCount = 0;
-            let blockCounts = {};
-
-            for (let i = 0; i < blockData.length; i++) {
-                const id = blockData[i];
-                const blockName = palette[id]?.value || "unknown";
-
-                if (!blockCounts[blockName]) blockCounts[blockName] = 0;
-                blockCounts[blockName]++;
-
-                if (
-                    blockName !== "minecraft:air" &&
-                    blockName !== "minecraft:void_air" &&
-                    blockName !== "minecraft:cave_air"
-                ) {
-                    solidCount++;
-                }
+        // Most used block
+        let mostUsed = { name: "None", count: 0 };
+        for (const b in blockCounts) {
+            if (blockCounts[b] > mostUsed.count) {
+                mostUsed = { name: b, count: blockCounts[b] };
             }
+        }
 
-            // Most used block
-            let mostUsed = { name: "None", count: 0 };
-            for (const b in blockCounts) {
-                if (blockCounts[b] > mostUsed.count) {
-                    mostUsed = { name: b, count: blockCounts[b] };
-                }
-            }
+        // Entity count
+        const entities = v.Entities?.value || [];
+        const entityCount = entities.length;
 
-            // Entity count
-            const entities = v.Entities?.value || [];
-            const entityCount = entities.length;
+        // Save for download
+        scanData = {
+            width, height, length, volume,
+            solidCount,
+            airCount: volume - solidCount,
+            mostUsed,
+            blockCounts,
+            entityCount
+        };
 
-            // Save for download
-            scanData = {
-                width, height, length, volume,
-                solidCount,
-                airCount: volume - solidCount,
-                mostUsed,
-                blockCounts,
-                entityCount
-            };
-
-            displayResults();
-        });
+        displayResults();
     });
 }
 
