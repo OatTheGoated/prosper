@@ -379,6 +379,12 @@
             <img src="${best.image}" alt="${best.name}">
             <div>
                 <h2>⭐ Featured: ${best.name}</h2>
+
+                <!-- ⭐ Block Count -->
+                <p style="color:#4CAF50; font-weight:bold;">
+                    Blocks: ${best.block_count?.toLocaleString() || "N/A"}
+                </p>
+
                 <p>${best.description}</p>
                 <p><strong>Author:</strong> ${username}</p>
                 <div class="tag-badges">
@@ -416,6 +422,12 @@
             card.innerHTML = `
                 <img src="${s.image}" alt="${s.name}">
                 <h3>${s.name}</h3>
+
+                <!-- ⭐ Block Count -->
+                <p style="color:#4CAF50; font-weight:bold;">
+                    Blocks: ${s.block_count?.toLocaleString() || "N/A"}
+                </p>
+
                 <p>${s.description}</p>
                 <p><strong>Author:</strong> ${username}</p>
                 <div class="tag-badges">
