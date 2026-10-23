@@ -1,10 +1,11 @@
-// Minimal browser NBT parser for ProsperMC
-// Supports uncompressed NBT (.schem, .litematic)
+// Browser NBT parser for ProsperMC
+// Supports modern & legacy Minecraft schematic files (.schem, .schematic, .nbt, .litematic)
 
 window.NBT = {
     read(buffer) {
         const data = new DataView(buffer);
         let offset = 0;
+        const utf8 = new TextDecoder("utf-8");
 
         function ensure(bytes) {
             if (offset + bytes > data.byteLength) {
@@ -26,12 +27,9 @@ window.NBT = {
 
         function readString(len) {
             ensure(len);
-            let out = "";
-            for (let i = 0; i < len; i++) {
-                out += String.fromCharCode(data.getUint8(offset));
-                offset++;
-            }
-            return out;
+            const bytes = new Uint8Array(buffer, offset, len);
+            offset += len;
+            return utf8.decode(bytes);
         }
 
         function readValue(type) {
@@ -65,7 +63,7 @@ window.NBT = {
                     const len = data.getInt32(offset); offset += 4;
                     ensure(len);
                     const arr = new Uint8Array(len);
-                    for (let i = 0; i < len; i++) arr[i] = data.getUint8(offset++);
+                    for (let j = 0; j < len; j++) arr[j] = data.getUint8(offset++);
                     return arr;
                 }
 
@@ -77,10 +75,10 @@ window.NBT = {
 
                 case 9: { // list
                     ensure(1 + 4);
-                    const subtype = data.getUint8(offset++); 
+                    const subtype = data.getUint8(offset++);
                     const len = data.getInt32(offset); offset += 4;
                     const list = [];
-                    for (let i = 0; i < len; i++) list.push(readValue(subtype));
+                    for (let j = 0; j < len; j++) list.push(readValue(subtype));
                     return list;
                 }
 
@@ -99,7 +97,7 @@ window.NBT = {
                     const len = data.getInt32(offset); offset += 4;
                     ensure(len * 4);
                     const arr = [];
-                    for (let i = 0; i < len; i++) {
+                    for (let j = 0; j < len; j++) {
                         arr.push(data.getInt32(offset));
                         offset += 4;
                     }
@@ -111,8 +109,8 @@ window.NBT = {
                     const len = data.getInt32(offset); offset += 4;
                     ensure(len * 8);
                     const arr = [];
-                    for (let i = 0; i < len; i++) {
-                        arr.push(Number(data.getBigInt64(offset)));
+                    for (let j = 0; j < len; j++) {
+                        arr.push(data.getBigInt64(offset));
                         offset += 8;
                     }
                     return arr;
@@ -124,5 +122,32 @@ window.NBT = {
         }
 
         return readTag();
+    },
+
+    decodeVarIntArray(byteArray, expectedLength) {
+        if (!byteArray) return [];
+        // If byte count exactly matches expected length, it is 1 byte per block
+        if (expectedLength && byteArray.length === expectedLength) {
+            return Array.from(byteArray);
+        }
+
+        const result = [];
+        let i = 0;
+        const len = byteArray.length;
+        while (i < len) {
+            let value = 0;
+            let shift = 0;
+            let b;
+            do {
+                if (i >= len) break;
+                b = byteArray[i++];
+                value |= (b & 0x7F) << shift;
+                shift += 7;
+            } while ((b & 0x80) !== 0);
+
+            result.push(value);
+            if (expectedLength && result.length >= expectedLength) break;
+        }
+        return result;
     }
 };

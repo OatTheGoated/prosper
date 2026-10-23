@@ -162,6 +162,32 @@
             font-size: 15px;
         }
 
+        .preview-btn {
+            background: #4db8ff !important;
+            color: #000 !important;
+            font-weight: bold !important;
+            box-shadow: 0 0 10px rgba(77, 184, 255, 0.35);
+            transition: all 0.2s ease;
+        }
+
+        .preview-btn:hover {
+            background: #80cdff !important;
+            box-shadow: 0 0 18px rgba(77, 184, 255, 0.7);
+            transform: translateY(-2px);
+        }
+
+        .featured-card button {
+            margin-top: 10px;
+            padding: 10px 16px;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+            margin-right: 8px;
+        }
+
         .like-btn {
             background: var(--accent-red) !important;
         }
@@ -217,6 +243,7 @@
             <li><a href="index.html">Home</a></li>
             <li><a href="modpacks.html">Modpacks</a></li>
             <li><a href="schematics.html" class="active">Schematics</a></li>
+            <li><a href="scanner.html">Scanner</a></li>
             <li><a href="videos.html">Videos</a></li>
             <li><a href="dashboard.html">Dashboard</a></li>
             <li><a href="admin/upload.html" id="uploadTab">Upload</a></li>
@@ -392,6 +419,9 @@
                         .map(t => `<span class="tag-badge">${t}</span>`).join("")}
                 </div>
                 <p><strong>Likes:</strong> ${bestLikes}</p>
+                <button class="preview-btn" onclick="previewSchematic('${best.file}', '${encodeURIComponent(best.name)}')">
+                    👁️ Preview Schematic
+                </button>
                 <button onclick="window.location='${best.file}'">
                     Download Schematic
                 </button>
@@ -435,6 +465,9 @@
                         .map(t => `<span class="tag-badge">${t}</span>`).join("")}
                 </div>
 
+                <button class="preview-btn" onclick="previewSchematic('${s.file}', '${encodeURIComponent(s.name)}')">
+                    👁️ Preview Schematic
+                </button>
                 <button onclick="window.location='${s.file}'">
                     Download Schematic
                 </button>
@@ -560,6 +593,10 @@
         btn.onclick = () => {
             document.body.classList.toggle("light");
         };
+    }
+
+    function previewSchematic(fileUrl, name) {
+        window.location.href = `scanner.html?url=${encodeURIComponent(fileUrl)}&name=${name}`;
     }
 
     async function init() {

@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Upload – Prosper</title>
+    <title>Upload Schematic – Prosper</title>
     <link rel="stylesheet" href="../style.css?v=22">
 
     <!-- Supabase UMD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Pako (GZIP/ZLIB) + NBT Browser parser -->
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    <script src="../nbt-browser.js"></script>
 
     <style>
         /* ⭐ CLEAN ALIGNED UPLOAD FORM */
@@ -18,8 +22,9 @@
             padding: 2rem;
             background: #111;
             border-radius: 20px;
-            border: 3px solid #4db8ff; /* glowing blue */
-            margin-top: 40px;
+            border: 3px solid #4db8ff;
+            margin-top: 30px;
+            box-shadow: 0 0 25px rgba(77, 184, 255, 0.25);
         }
 
         .upload-grid {
@@ -31,7 +36,7 @@
 
         .upload-grid label {
             text-align: right;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #4db8ff;
             text-shadow: 0 0 8px #4db8ff;
         }
@@ -39,18 +44,19 @@
         .upload-grid input,
         .upload-grid textarea {
             width: 100%;
-            padding: 0.7rem;
+            padding: 0.75rem;
             border-radius: 10px;
             border: 2px solid #333;
             background: #222;
             color: #fff;
+            font-size: 0.95rem;
         }
 
         #uploadBtn {
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             width: 100%;
             padding: 1rem;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             background: #4db8ff;
             border: none;
             border-radius: 12px;
@@ -58,9 +64,50 @@
             color: #000;
             font-weight: bold;
             text-shadow: 0 0 5px #fff;
+            transition: all 0.2s;
         }
 
-        /* ⭐ Thumbnail preview */
+        #uploadBtn:hover {
+            background: #73c8ff;
+            box-shadow: 0 0 20px rgba(77, 184, 255, 0.6);
+        }
+
+        #uploadBtn:disabled {
+            background: #444;
+            color: #888;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Status box */
+        .status-box {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status-info {
+            background: rgba(77, 184, 255, 0.15);
+            border: 1px solid #4db8ff;
+            color: #4db8ff;
+        }
+
+        .status-success {
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+        }
+
+        .status-error {
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid #ff4444;
+            color: #ff4444;
+        }
+
+        /* Thumbnail preview */
         .thumb-preview-box {
             grid-column: 1 / 3;
             margin-top: 1rem;
@@ -76,13 +123,14 @@
             transition: transform 0.3s ease;
             display: none;
             box-shadow: 0 0 15px #4db8ff;
+            margin: auto;
         }
 
         .thumb-preview:hover {
             transform: scale(1.05);
         }
 
-        /* ⭐ Modal */
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -115,68 +163,70 @@
                 <li><a href="../index.html">Home</a></li>
                 <li><a href="../modpacks.html">Modpacks</a></li>
                 <li><a href="../schematics.html">Schematics</a></li>
+                <li><a href="../scanner.html">Scanner</a></li>
                 <li><a href="../videos.html">Videos</a></li>
                 <li><a href="../dashboard.html">Dashboard</a></li>
-
                 <li><a href="upload.html" class="active" id="uploadTab">Upload</a></li>
-                <li><a href="../login.html">Login</a></li>
+                <li><a href="../login.html" id="authNavBtn">Login</a></li>
             </ul>
         </div>
     </nav>
 
-    <section class="hero">
-        <h1 class="pixel">Upload Schematic</h1>
+    <section class="hero" style="padding: 40px 20px;">
+        <h1 class="pixel" style="font-size: 2.5rem;">Upload Schematic</h1>
+        <p style="color:#ccc;">Share your Minecraft builds with the Prosper community.</p>
 
-        <!-- ⭐ NEW CLEAN FORM -->
+        <!-- UPLOAD FORM -->
         <div class="upload-container">
 
             <div class="upload-grid">
 
-                <label for="name">Name</label>
-                <input id="name" placeholder="Name">
+                <label for="name">Schematic Name</label>
+                <input id="name" placeholder="e.g. Medieval Watchtower">
 
-                <label for="tags">Tags</label>
-                <input id="tags" placeholder="Tags (comma separated)">
+                <label for="tags">Tags / Category</label>
+                <input id="tags" placeholder="e.g. #Tower #Medieval #Stone (comma separated)">
 
                 <label for="description">Description</label>
-                <textarea id="description" placeholder="Description"></textarea>
+                <textarea id="description" rows="3" placeholder="Briefly describe the build, materials, or instructions..."></textarea>
 
-                <label>Schematic File (.schem / .litematic)</label>
-                <input id="schemFile" type="file">
+                <label>Schematic File (.schem / .litematic / .nbt)</label>
+                <input id="schemFile" type="file" accept=".schem,.litematic,.schematic,.nbt">
 
-                <!-- ⭐ Block Count Display -->
+                <!-- Solid Block Count Display -->
                 <div id="blockCountDisplay" style="
                     grid-column: 1 / 3;
-                    margin-top: 10px;
-                    font-size: 1.2rem;
+                    margin-top: 5px;
+                    font-size: 1.05rem;
                     color: #4db8ff;
                     text-shadow: 0 0 8px #4db8ff;
-                ">Solid Blocks: (upload a file)</div>
+                    text-align: center;
+                ">Select a schematic file to auto-scan blocks</div>
 
-                <label>Preview Image (.webp)</label>
-                <input id="imageFile" type="file">
+                <label>Preview Image (optional)</label>
+                <input id="imageFile" type="file" accept="image/*">
 
-                <!-- ⭐ Thumbnail Preview -->
+                <!-- Thumbnail Preview -->
                 <div class="thumb-preview-box">
-                    <img id="thumbPreview" class="thumb-preview" src="" alt="Preview will appear here">
+                    <img id="thumbPreview" class="thumb-preview" src="" alt="Thumbnail preview">
                 </div>
 
             </div>
 
-            <button id="uploadBtn">Upload</button>
+            <button id="uploadBtn">Upload Schematic to Gallery</button>
+            <div id="statusBox" class="status-box"></div>
         </div>
     </section>
 
 </div>
 
-<!-- ⭐ Image Zoom Modal -->
+<!-- Image Zoom Modal -->
 <div id="imageZoomModal" class="modal" onclick="closeImageZoom(event)">
     <div class="modal-content">
         <img id="zoomedImage" style="width:100%; border-radius:10px;">
     </div>
 </div>
 
-<!-- ⭐ SCRIPT -->
 <script>
     const client = supabase.createClient(
         "https://pnkwqqapyoaxdcpubpwb.supabase.co",
@@ -185,46 +235,101 @@
 
     let currentUser = null;
     let solidBlockCount = 0;
+    const uploadBtn = document.getElementById("uploadBtn");
+    const statusBox = document.getElementById("statusBox");
+    const authNavBtn = document.getElementById("authNavBtn");
 
-    // Helper to verify if user has admin role
-    async function checkIsAdmin(user) {
-        if (!user) return false;
-        if (user.user_metadata && user.user_metadata.role === "admin") return true;
-
-        const { data: profile } = await client
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
-
-        return profile && profile.role === "admin";
+    function setStatus(msg, type) {
+        statusBox.style.display = "block";
+        statusBox.className = "status-box " + (type === "success" ? "status-success" : type === "error" ? "status-error" : "status-info");
+        statusBox.innerHTML = msg;
     }
 
-    // ⭐ ADMIN CHECK
-    async function checkAdmin() {
+    // Check user authentication
+    async function checkAuth() {
         const { data: { session } } = await client.auth.getSession();
 
         if (!session) {
-            alert("You must be logged in.");
-            window.location.href = "../login.html";
+            setStatus("⚠️ You must be logged in to upload schematics. <a href='../login.html' style='color:#fff; text-decoration:underline;'>Click here to Log In</a>", "error");
+            uploadBtn.disabled = true;
             return;
         }
 
-        const user = session.user;
-        const isAdmin = await checkIsAdmin(user);
-
-        if (!isAdmin) {
-            alert("Access denied — admin only.");
+        currentUser = session.user;
+        authNavBtn.textContent = "Logout";
+        authNavBtn.href = "#";
+        authNavBtn.onclick = async (e) => {
+            e.preventDefault();
+            await client.auth.signOut();
             window.location.href = "../login.html";
-            return;
-        }
-
-        currentUser = user;
+        };
     }
 
-    checkAdmin();
+    checkAuth();
 
-    // ⭐ Thumbnail live preview
+    // Auto-scan solid blocks when schematic is chosen
+    document.getElementById("schemFile").addEventListener("change", async function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const display = document.getElementById("blockCountDisplay");
+        display.innerText = "⏳ Scanning schematic file...";
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const header = new Uint8Array(arrayBuffer, 0, Math.min(arrayBuffer.byteLength, 4));
+
+            let decompressedBuffer = arrayBuffer;
+            if (header[0] === 0x1F && header[1] === 0x8B) {
+                decompressedBuffer = pako.ungzip(new Uint8Array(arrayBuffer)).buffer;
+            } else if (header[0] === 0x78) {
+                decompressedBuffer = pako.inflate(new Uint8Array(arrayBuffer)).buffer;
+            }
+
+            const nbtData = NBT.read(decompressedBuffer);
+            const root = nbtData.value || {};
+
+            let count = 0;
+            let width = 0, height = 0, length = 0;
+
+            // Sponge .schem
+            if (root.Width && root.Height && root.Length) {
+                width = Number(root.Width.value);
+                height = Number(root.Height.value);
+                length = Number(root.Length.value);
+
+                const paletteMap = {};
+                if (root.Palette && root.Palette.value) {
+                    for (const [key, tag] of Object.entries(root.Palette.value)) {
+                        const val = tag && tag.value !== undefined ? tag.value : tag;
+                        if (typeof val === "number") paletteMap[val] = key;
+                        else paletteMap[key] = val;
+                    }
+                }
+
+                const rawBlocks = root.BlockData ? root.BlockData.value : [];
+                const blockList = NBT.decodeVarIntArray(rawBlocks, width * height * length);
+
+                for (const id of blockList) {
+                    const blockName = paletteMap[id] || "";
+                    if (blockName && !blockName.includes("air")) count++;
+                }
+            } else if (root.size && root.blocks) {
+                // Vanilla .nbt
+                const size = root.size.value || [0,0,0];
+                width = size[0]; height = size[1]; length = size[2];
+                count = (root.blocks.value || []).length;
+            }
+
+            solidBlockCount = count;
+            display.innerHTML = `✅ <strong>Solid Blocks:</strong> ${count.toLocaleString()} ${width ? `(Size: ${width}×${height}×${length})` : ""}`;
+        } catch (err) {
+            console.warn("Scan warning:", err);
+            display.innerText = "Schematic selected (block count could not be auto-calculated).";
+        }
+    });
+
+    // Thumbnail live preview
     document.getElementById("imageFile").addEventListener("change", function(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -238,162 +343,131 @@
         reader.readAsDataURL(file);
     });
 
-    // ⭐ Click to zoom thumbnail
     document.getElementById("thumbPreview").onclick = () => {
         const modal = document.getElementById("imageZoomModal");
-        const zoomed = document.getElementById("zoomedImage");
-
-        zoomed.src = document.getElementById("thumbPreview").src;
+        document.getElementById("zoomedImage").src = document.getElementById("thumbPreview").src;
         modal.style.display = "flex";
     };
 
-    // ⭐ Close zoom modal
     function closeImageZoom(event) {
         if (event.target.id === "imageZoomModal") {
             document.getElementById("imageZoomModal").style.display = "none";
         }
     }
 
-    // ⭐ BLOCK COUNT SCANNER (NO AIR)
-    import("https://cdn.jsdelivr.net/npm/nbt@1.0.0/dist/nbt.min.js").then(nbt => {
-
-        document.getElementById("schemFile").addEventListener("change", async function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const arrayBuffer = await file.arrayBuffer();
-            const buffer = new Uint8Array(arrayBuffer);
-
-            nbt.parse(buffer, (err, data) => {
-                if (err) {
-                    document.getElementById("blockCountDisplay").innerText =
-                        "Error reading schematic.";
-                    return;
-                }
-
-                const schem = data.value;
-                const palette = schem.Palette ? schem.Palette.value : null;
-                const blockData = schem.BlockData ? schem.BlockData.value : null;
-
-                if (!palette || !blockData) {
-                    document.getElementById("blockCountDisplay").innerText =
-                        "Schematic parsed (no block data found).";
-                    return;
-                }
-
-                let count = 0;
-
-                for (let i = 0; i < blockData.length; i++) {
-                    const id = blockData[i];
-                    const blockName = palette[id]?.value;
-
-                    if (
-                        blockName &&
-                        blockName !== "minecraft:air" &&
-                        blockName !== "minecraft:void_air" &&
-                        blockName !== "minecraft:cave_air"
-                    ) {
-                        count++;
-                    }
-                }
-
-                solidBlockCount = count;
-
-                document.getElementById("blockCountDisplay").innerText =
-                    `Solid Blocks: ${solidBlockCount.toLocaleString()}`;
-            });
-        });
-
-    });
-
-    // ⭐ UPLOAD HANDLER
-    document.getElementById("uploadBtn").onclick = async () => {
+    // Upload Handler
+    uploadBtn.onclick = async () => {
         if (!currentUser) {
-            alert("Session expired. Log in again.");
+            alert("Please log in first.");
             window.location.href = "../login.html";
             return;
         }
 
         const name = document.getElementById("name").value.trim();
-        const tags = document.getElementById("tags").value.trim();
+        const tagsInput = document.getElementById("tags").value.trim();
         const description = document.getElementById("description").value.trim();
 
         const schemFile = document.getElementById("schemFile").files[0];
         const imageFile = document.getElementById("imageFile").files[0];
 
-        if (!name || !tags || !description) {
-            alert("Fill in all fields.");
+        if (!name) {
+            alert("Please enter a name for the schematic.");
+            return;
+        }
+        if (!schemFile) {
+            alert("Please select a schematic file.");
             return;
         }
 
-        if (!schemFile || !imageFile) {
-            alert("Missing files.");
-            return;
+        uploadBtn.disabled = true;
+        setStatus("⏳ Step 1/3: Uploading schematic file to Supabase storage...", "info");
+
+        try {
+            // 1. Upload Schematic File
+            const cleanSchemName = schemFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+            const schemPath = `public/${Date.now()}_${cleanSchemName}`;
+
+            const { error: schemErr } = await client.storage
+                .from("schematics")
+                .upload(schemPath, schemFile, {
+                    upsert: true,
+                    contentType: "application/octet-stream"
+                });
+
+            if (schemErr) {
+                throw new Error("Schematic storage upload failed: " + schemErr.message);
+            }
+
+            const schemURL = client.storage
+                .from("schematics")
+                .getPublicUrl(schemPath).data.publicUrl;
+
+            // 2. Upload Preview Image (or use fallback)
+            let imageURL = "https://raw.githubusercontent.com/OatTheGoated/prosper/main/assets/cobblemonbanner.png";
+
+            if (imageFile) {
+                setStatus("⏳ Step 2/3: Uploading preview image...", "info");
+                const cleanImgName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+                const imagePath = `public/${Date.now()}_${cleanImgName}`;
+
+                const { error: imgErr } = await client.storage
+                    .from("images")
+                    .upload(imagePath, imageFile, {
+                        upsert: true,
+                        contentType: imageFile.type || "image/webp"
+                    });
+
+                if (imgErr) {
+                    console.warn("Image upload warning:", imgErr);
+                } else {
+                    imageURL = client.storage
+                        .from("images")
+                        .getPublicUrl(imagePath).data.publicUrl;
+                }
+            }
+
+            // 3. Insert Metadata into Database
+            setStatus("⏳ Step 3/3: Saving schematic metadata to database...", "info");
+
+            const tagsArray = tagsInput
+                ? tagsInput.split(",").map(t => t.trim()).filter(Boolean)
+                : ["#Minecraft"];
+
+            const { error: dbErr } = await client
+                .from("schematics")
+                .insert({
+                    name,
+                    description: description || "No description provided.",
+                    tags: tagsArray,
+                    file: schemURL,
+                    image: imageURL,
+                    author: currentUser.email,
+                    uploaded_by: currentUser.id,
+                    block_count: solidBlockCount || null,
+                    created_at: new Date().toISOString()
+                });
+
+            if (dbErr) {
+                throw new Error("Database save error: " + dbErr.message);
+            }
+
+            setStatus(`🎉 <strong>"${name}"</strong> was uploaded successfully! <br><a href="../schematics.html" style="color:#fff; text-decoration:underline; font-weight:bold; margin-top:6px; display:inline-block;">View in Schematics Gallery →</a>`, "success");
+
+            // Reset inputs
+            document.getElementById("name").value = "";
+            document.getElementById("tags").value = "";
+            document.getElementById("description").value = "";
+            document.getElementById("schemFile").value = "";
+            document.getElementById("imageFile").value = "";
+            document.getElementById("thumbPreview").style.display = "none";
+            document.getElementById("blockCountDisplay").innerText = "Select a schematic file to auto-scan blocks";
+
+        } catch (err) {
+            console.error("Upload error:", err);
+            setStatus(`❌ Upload failed: ${err.message}`, "error");
+        } finally {
+            uploadBtn.disabled = false;
         }
-
-        // ⭐ Auto-detected author
-        const author = currentUser.email;
-
-        // ⭐ Upload schematic
-        const schemPath = `${Date.now()}_${schemFile.name}`;
-        const { error: schemErr } = await client.storage
-            .from("schematics")
-            .upload(schemPath, schemFile, {
-                upsert: true,
-                contentType: schemFile.type || "application/octet-stream"
-            });
-
-        if (schemErr) {
-            console.error(schemErr);
-            alert("Error uploading schematic: " + schemErr.message);
-            return;
-        }
-
-        const schemURL = client.storage
-            .from("schematics")
-            .getPublicUrl(schemPath).data.publicUrl;
-
-        // ⭐ Upload image
-        const imagePath = `${Date.now()}_${imageFile.name}`;
-        const { error: imgErr } = await client.storage
-            .from("images")
-            .upload(imagePath, imageFile, {
-                upsert: true,
-                contentType: imageFile.type || "image/webp"
-            });
-
-        if (imgErr) {
-            console.error(imgErr);
-            alert("Error uploading image: " + imgErr.message);
-            return;
-        }
-
-        const imageURL = client.storage
-            .from("images")
-            .getPublicUrl(imagePath).data.publicUrl;
-
-        // ⭐ Insert metadata + block count
-        const { error: dbErr } = await client
-            .from("schematics")
-            .insert({
-                name,
-                description,
-                tags: tags.split(",").map(t => t.trim()),
-                file: schemURL,
-                image: imageURL,
-                author: author,
-                uploaded_by: currentUser.id,
-                block_count: solidBlockCount,
-                created_at: new Date().toISOString()
-            });
-
-        if (dbErr) {
-            console.error(dbErr);
-            alert("Error saving metadata: " + dbErr.message);
-            return;
-        }
-
-        alert("Upload complete!");
     };
 </script>
 

@@ -2,272 +2,1271 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schematic Scanner – ProsperMC</title>
+    <link rel="stylesheet" href="./style.css?v=35">
 
     <!-- GZIP/ZLIB decompressor -->
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+
+    <!-- Three.js + OrbitControls for 3D Voxel Preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <!-- Custom browser NBT parser -->
     <script src="nbt-browser.js"></script>
 
     <style>
-        body {
-            background: #111;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+        :root {
+            --cyan: #4db8ff;
+            --cyan-glow: rgba(77, 184, 255, 0.4);
+            --emerald: #00ff88;
         }
 
-        .navbar {
-            background:#000;
-            padding:10px 20px;
-        }
-
-        .navbar .container {
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-        }
-
-        .nav-links {
-            list-style:none;
-            display:flex;
-            gap:20px;
-            padding:0;
-            margin:0;
-        }
-
-        .nav-links a {
-            color:#fff;
-            text-decoration:none;
-        }
-
-        .nav-links a.active {
-            text-decoration:underline;
-        }
-
-        h1 {
-            text-align:center;
-            padding:20px;
-            font-size:32px;
-        }
-
-        .scanner-box {
-            width: 90%;
-            max-width: 800px;
+        .scanner-container {
+            width: 100%;
+            max-width: 1100px;
             margin: auto;
-            background: #1a1a1a;
-            padding: 20px;
-            border-radius: 15px;
-            border: 3px solid #4db8ff;
-            box-shadow: 0 0 15px #4db8ff;
+            padding: 20px 10px;
         }
 
-        input[type="file"] {
-            width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            background: #222;
-            border: 2px solid #333;
-            color: #fff;
-            margin-bottom: 20px;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #4db8ff;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
+        /* UPLOAD DROP ZONE */
+        .drop-zone {
+            border: 3px dashed var(--cyan);
+            border-radius: 16px;
+            background: rgba(20, 20, 20, 0.7);
+            padding: 40px 20px;
+            text-align: center;
             cursor: pointer;
-            color: #000;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #fff;
+            background: rgba(77, 184, 255, 0.15);
+            box-shadow: 0 0 30px var(--cyan-glow);
+            transform: scale(1.01);
+        }
+
+        .drop-icon {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone h2 {
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .drop-zone p {
+            color: #aaa;
+            font-size: 0.95rem;
+        }
+
+        .file-badge {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 6px 16px;
+            background: rgba(77, 184, 255, 0.2);
+            border: 1px solid var(--cyan);
+            border-radius: 20px;
+            color: var(--cyan);
             font-weight: bold;
-            margin-top: 10px;
+            font-size: 0.9rem;
         }
 
-        .results {
-            margin-top: 20px;
-            background: #111;
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #4db8ff;
+        /* STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
         }
 
-        .block-list {
-            max-height: 300px;
+        .stat-card {
+            background: rgba(25, 25, 25, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--cyan);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .stat-val {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* 3D VIEWER CONTAINER */
+        .viewer-box {
+            margin-top: 30px;
+            background: #0d0d0d;
+            border-radius: 16px;
+            border: 2px solid #2a2a2a;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        }
+
+        .viewer-header {
+            padding: 12px 20px;
+            background: #161616;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #canvas3d {
+            width: 100%;
+            height: 480px;
+            display: block;
+            cursor: grab;
+        }
+
+        #canvas3d:active {
+            cursor: grabbing;
+        }
+
+        .viewer-controls {
+            padding: 12px 20px;
+            background: #141414;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .slider-group input[type="range"] {
+            flex: 1;
+            accent-color: var(--cyan);
+            cursor: pointer;
+        }
+
+        /* MATERIAL CALCULATOR & TABS */
+        .tab-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 35px;
+            border-bottom: 2px solid #222;
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 1.05rem;
+            font-weight: bold;
+            padding: 8px 18px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .tab-btn.active {
+            color: var(--cyan);
+            border-bottom: 2px solid var(--cyan);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .filter-toolbar {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #1a1a1a;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        .filter-select {
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #1a1a1a;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        /* MATERIAL LIST TABLE */
+        .materials-table-box {
+            margin-top: 15px;
+            background: #141414;
+            border-radius: 12px;
+            border: 1px solid #222;
+            max-height: 480px;
             overflow-y: auto;
-            background: #222;
-            padding: 10px;
-            border-radius: 10px;
-            border: 2px solid #333;
         }
 
-        .download-btn {
-            background: #4CAF50;
-            margin-top: 20px;
+        table.mat-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        table.mat-table th {
+            background: #1c1c1c;
+            padding: 12px 16px;
+            color: #aaa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            border-bottom: 1px solid #333;
+        }
+
+        table.mat-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #1f1f1f;
+        }
+
+        table.mat-table tr:hover {
+            background: rgba(77, 184, 255, 0.05);
+        }
+
+        .block-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .block-color-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stack-badge {
+            color: #00ff88;
+            font-family: monospace;
+            font-size: 0.9rem;
+            background: rgba(0, 255, 136, 0.1);
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .checkbox-collected {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--cyan);
+        }
+
+        /* TOP BLOCKS BARS */
+        .bar-container {
+            margin-top: 12px;
+            background: #222;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 18px;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ff8844);
+            border-radius: 8px;
+            transition: width 0.6s ease;
+        }
+
+        /* ACTION BUTTONS */
+        .action-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            flex: 1;
+            min-width: 180px;
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-blue {
+            background: var(--cyan);
+            color: #000;
+        }
+
+        .btn-blue:hover {
+            background: #73c8ff;
+            box-shadow: 0 0 15px var(--cyan-glow);
+        }
+
+        .btn-green {
+            background: #2e8b57;
+            color: #fff;
+        }
+
+        .btn-green:hover {
+            background: #3cb371;
+            box-shadow: 0 0 15px rgba(60, 179, 113, 0.4);
+        }
+
+        .btn-dark {
+            background: #252525;
+            color: #fff;
+            border: 1px solid #444;
+        }
+
+        .btn-dark:hover {
+            background: #333;
+        }
+
+        .loading-spinner {
+            display: none;
+            margin: 20px auto;
+            border: 4px solid #222;
+            border-top: 4px solid var(--cyan);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 
 <body>
+<div class="site">
 
-<nav class="navbar">
-    <div class="container">
-        <h1 class="logo pixel">⛏️ Prosper</h1>
-        <ul class="nav-links">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="modpacks.html">Modpacks</a></li>
-            <li><a href="schematics.html">Schematics</a></li>
-            <li><a href="videos.html">Videos</a></li>
-            <li><a href="dashboard.html">Dashboard</a></li>
-            <li><a href="admin/upload.html">Upload</a></li>
-            <li><a href="scanner.html" class="active">Scanner</a></li>
-        </ul>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo pixel">⛏️ Prosper</h1>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="modpacks.html">Modpacks</a></li>
+                <li><a href="schematics.html">Schematics</a></li>
+                <li><a href="videos.html">Videos</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="admin/upload.html">Upload</a></li>
+                <li><a href="scanner.html" class="active">Scanner</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="scanner-container">
+        <div style="text-align: center; margin-bottom: 25px;">
+            <h1 class="pixel" style="font-size: 2.6rem;">🔬 Schematic Scanner & 3D Viewer</h1>
+            <p style="color: #aaa; margin-top: 5px;">Inspect Minecraft builds, view layer-by-layer 3D voxels, and calculate survival material stacks.</p>
+        </div>
+
+        <!-- UPLOAD DROP ZONE -->
+        <div class="drop-zone" id="dropZone">
+            <input type="file" id="schemFileInput" style="display: none;" accept=".schem,.schematic,.litematic,.nbt">
+            <div class="drop-icon">📦</div>
+            <h2 class="pixel">Drag & Drop Schematic Here</h2>
+            <p>Supports modern <strong>.schem</strong>, Litematica <strong>.litematic</strong>, Vanilla <strong>.nbt</strong>, and legacy <strong>.schematic</strong></p>
+            <div id="fileBadge" class="file-badge" style="display: none;"></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 15px;">
+            <button id="loadSampleBtn" class="btn-dark" style="display: inline-block; padding: 10px 20px; font-size: 0.95rem; border-radius: 8px; cursor: pointer; border: 1px solid #444;">
+                ✨ Don't have a file? Click here to test with Sample Build (sample_house.schem)
+            </button>
+        </div>
+
+        <div id="spinner" class="loading-spinner"></div>
+
+        <!-- RESULTS WRAPPER -->
+        <div id="resultsWrapper" style="display: none;">
+
+            <!-- STATS CARDS -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Dimensions</div>
+                    <div class="stat-val" id="statDim">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Volume</div>
+                    <div class="stat-val" id="statVol">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Solid Blocks</div>
+                    <div class="stat-val" id="statSolid" style="color: var(--emerald);">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Air Blocks</div>
+                    <div class="stat-val" id="statAir" style="color: #aaa;">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Unique Blocks</div>
+                    <div class="stat-val" id="statUnique" style="color: var(--cyan);">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Entities</div>
+                    <div class="stat-val" id="statEntities">-</div>
+                </div>
+            </div>
+
+            <!-- 3D VOXEL VIEWER -->
+            <div class="viewer-box">
+                <div class="viewer-header">
+                    <div>
+                        <strong style="color: #fff; font-size: 1.1rem;">🕹️ Interactive 3D Voxel Viewer</strong>
+                        <span style="color: #777; font-size: 0.85rem; margin-left: 8px;">(Left click: Rotate • Right click: Pan • Scroll: Zoom)</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-dark" style="padding: 5px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="resetCamera()">Reset View</button>
+                        <button class="btn-dark" style="padding: 5px 12px; font-size: 0.85rem; border-radius: 6px;" id="gridToggleBtn" onclick="toggleGrid()">Toggle Grid</button>
+                    </div>
+                </div>
+
+                <div id="canvas3dContainer" style="position: relative;">
+                    <canvas id="canvas3d"></canvas>
+                </div>
+
+                <div class="viewer-controls">
+                    <div class="slider-group">
+                        <label for="layerSlider"><strong>Layer Slice:</strong> <span id="layerLabel">All Layers</span></label>
+                        <input type="range" id="layerSlider" min="1" max="100" value="100">
+                    </div>
+                    <div id="renderCountBadge" style="color: #888; font-size: 0.85rem;">Rendering voxels...</div>
+                </div>
+            </div>
+
+            <!-- TABS -->
+            <div class="tab-bar">
+                <button class="tab-btn active" id="tabMatBtn" onclick="switchTab('materials')">📋 Survival Material Calculator</button>
+                <button class="tab-btn" id="tabStatsBtn" onclick="switchTab('stats')">📊 Top Block Breakdown</button>
+            </div>
+
+            <!-- TAB 1: SURVIVAL MATERIALS -->
+            <div id="tabMaterialsView">
+                <div class="filter-toolbar">
+                    <input type="text" id="matSearch" class="search-input" placeholder="🔍 Filter blocks (e.g., stone, wood, glass)...">
+                    <select id="matCategoryFilter" class="filter-select">
+                        <option value="all">All Categories</option>
+                        <option value="Building">Building Blocks</option>
+                        <option value="Functional">Functional & Storage</option>
+                        <option value="Redstone">Redstone & Logic</option>
+                        <option value="Decorative">Decorative</option>
+                        <option value="Nature">Nature & Foliage</option>
+                    </select>
+                    <select id="matSortFilter" class="filter-select">
+                        <option value="count-desc">Highest Quantity</option>
+                        <option value="count-asc">Lowest Quantity</option>
+                        <option value="name-asc">Name (A → Z)</option>
+                    </select>
+                </div>
+
+                <div class="materials-table-box">
+                    <table class="mat-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">✓</th>
+                                <th>Block Name</th>
+                                <th>Category</th>
+                                <th>Total Quantity</th>
+                                <th>Survival Stacks (64x)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="materialsTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: DETAILED STATS -->
+            <div id="tabStatsView" style="display: none;">
+                <div style="background: #141414; padding: 20px; border-radius: 12px; border: 1px solid #222; margin-top: 15px;">
+                    <h3 class="pixel" style="margin-bottom: 15px; color: var(--cyan);">Top Blocks by Percentage</h3>
+                    <div id="topBlocksBars">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTION EXPORT BUTTONS -->
+            <div class="action-row">
+                <button class="btn-action btn-blue" onclick="copyDiscordList()">
+                    📋 Copy Discord Material List
+                </button>
+                <button class="btn-action btn-green" onclick="downloadCSV()">
+                    📊 Export Materials (.csv)
+                </button>
+                <button class="btn-action btn-dark" onclick="downloadTextReport()">
+                    📄 Download Report (.txt)
+                </button>
+            </div>
+
+        </div>
     </div>
-</nav>
-
-<h1>Schematic Scanner</h1>
-
-<div class="scanner-box">
-    <input type="file" id="schemInput">
-
-    <button onclick="scanSchematic()">Scan Schematic</button>
-
-    <div id="results" class="results" style="display:none;"></div>
-
-    <button id="downloadBtn" class="download-btn" style="display:none;" onclick="downloadReport()">
-        Download Report (.txt)
-    </button>
 </div>
 
 <script>
-let scanData = {};
+let currentSchemData = null;
+let threeApp = null;
+let activeTab = "materials";
 
-async function scanSchematic() {
-    const file = document.getElementById("schemInput").files[0];
-    if (!file) {
-        alert("Upload a .schem or .litematic file.");
-        return;
+// =========================================================
+// MINECRAFT BLOCK COLOR PALETTE
+// =========================================================
+function getBlockColor(name) {
+    name = (name || "").toLowerCase();
+    if (name.includes("stone_brick") || name.includes("deepslate")) return 0x5a5a5a;
+    if (name.includes("cobblestone")) return 0x6e6e6e;
+    if (name.includes("stone") || name.includes("andesite")) return 0x828282;
+    if (name.includes("diorite")) return 0xc8c8c8;
+    if (name.includes("granite")) return 0x9b6754;
+    if (name.includes("dirt") || name.includes("podzol")) return 0x866043;
+    if (name.includes("grass")) return 0x5a8f33;
+    if (name.includes("sand")) return 0xdccfa3;
+    if (name.includes("gravel")) return 0x767473;
+    if (name.includes("oak_log") || name.includes("wood")) return 0x6b5130;
+    if (name.includes("spruce_log")) return 0x3b2a1a;
+    if (name.includes("birch_log")) return 0xdad6ce;
+    if (name.includes("dark_oak")) return 0x2c1c0f;
+    if (name.includes("acacia")) return 0xa85a32;
+    if (name.includes("cherry")) return 0xe4b4be;
+    if (name.includes("mangrove")) return 0x74322d;
+    if (name.includes("oak_plank") || name.includes("plank")) return 0xb8945f;
+    if (name.includes("spruce_plank")) return 0x735135;
+    if (name.includes("birch_plank")) return 0xc4b07c;
+    if (name.includes("leaf") || name.includes("leaves")) return 0x365e26;
+    if (name.includes("glass")) return 0x8fd3e8;
+    if (name.includes("water")) return 0x2e5b88;
+    if (name.includes("lava") || name.includes("fire")) return 0xdf5313;
+    if (name.includes("brick")) return 0x964332;
+    if (name.includes("terracotta")) return 0x985e43;
+    if (name.includes("concrete")) return 0x3c3f41;
+    if (name.includes("wool")) return 0xdddddd;
+    if (name.includes("gold")) return 0xfcee4b;
+    if (name.includes("iron")) return 0xd8d8d8;
+    if (name.includes("diamond")) return 0x5be3df;
+    if (name.includes("emerald")) return 0x17dd62;
+    if (name.includes("netherite")) return 0x31292a;
+    if (name.includes("copper")) return 0xc06b4f;
+    if (name.includes("redstone")) return 0xdd1a1a;
+    if (name.includes("lapis")) return 0x103882;
+    if (name.includes("quartz")) return 0xebe6df;
+    if (name.includes("obsidian")) return 0x140d24;
+    if (name.includes("glowstone") || name.includes("lantern") || name.includes("torch")) return 0xffe169;
+    if (name.includes("prismarine")) return 0x5e9b8f;
+    if (name.includes("end_stone") || name.includes("purpur")) return 0xddd9a8;
+    return 0x7a7a7a;
+}
+
+function getBlockCategory(name) {
+    name = (name || "").toLowerCase();
+    if (name.includes("redstone") || name.includes("piston") || name.includes("observer") || name.includes("repeater") || name.includes("comparator") || name.includes("dispenser") || name.includes("dropper") || name.includes("hopper") || name.includes("tnt") || name.includes("lever") || name.includes("button") || name.includes("pressure_plate") || name.includes("rail")) return "Redstone";
+    if (name.includes("chest") || name.includes("furnace") || name.includes("crafting_table") || name.includes("anvil") || name.includes("enchanting") || name.includes("brewing") || name.includes("bed") || name.includes("barrel") || name.includes("beacon") || name.includes("cauldron") || name.includes("shulker_box") || name.includes("spawner")) return "Functional";
+    if (name.includes("glass") || name.includes("pane") || name.includes("lantern") || name.includes("torch") || name.includes("flower") || name.includes("carpet") || name.includes("banner") || name.includes("painting") || name.includes("head") || name.includes("skull") || name.includes("candle") || name.includes("chain") || name.includes("fence") || name.includes("wall") || name.includes("door") || name.includes("trapdoor") || name.includes("slab") || name.includes("stairs")) return "Decorative";
+    if (name.includes("leaf") || name.includes("leaves") || name.includes("log") || name.includes("wood") || name.includes("dirt") || name.includes("grass") || name.includes("sand") || name.includes("gravel") || name.includes("water") || name.includes("plant") || name.includes("crop") || name.includes("stem") || name.includes("vine") || name.includes("moss") || name.includes("lily")) return "Nature";
+    return "Building";
+}
+
+function formatCleanName(raw) {
+    return raw
+        .replace(/^minecraft:/i, "")
+        .replace(/\[.*\]$/, "")
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function formatStacks(count) {
+    const stacks = Math.floor(count / 64);
+    const rem = count % 64;
+    const shulkers = (count / 1728).toFixed(1);
+
+    if (count < 64) return `${count} items`;
+    let res = `${stacks} stack${stacks > 1 ? "s" : ""}`;
+    if (rem > 0) res += ` + ${rem}`;
+    if (count >= 1728) res += ` (${shulkers} Shulkers)`;
+    return res;
+}
+
+// =========================================================
+// DRAG & DROP AND FILE HANDLING
+// =========================================================
+const dropZone = document.getElementById("dropZone");
+const fileInput = document.getElementById("schemFileInput");
+const spinner = document.getElementById("spinner");
+
+dropZone.onclick = () => fileInput.click();
+
+const loadSampleBtn = document.getElementById("loadSampleBtn");
+if (loadSampleBtn) {
+    loadSampleBtn.onclick = async (e) => {
+        e.stopPropagation();
+        try {
+            spinner.style.display = "block";
+            const resp = await fetch("assets/sample_house.schem");
+            const blob = await resp.blob();
+            const file = new File([blob], "sample_house.schem");
+            processFile(file);
+        } catch (err) {
+            alert("Could not load sample file: " + err.message);
+            spinner.style.display = "none";
+        }
+    };
+}
+
+dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+});
+
+dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+});
+
+dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processFile(e.dataTransfer.files[0]);
     }
+});
 
-    const buffer = await file.arrayBuffer();
+fileInput.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+        processFile(e.target.files[0]);
+    }
+});
 
-    // decompress GZIP/ZLIB
-    let decompressed;
+// Auto-load schematic from URL parameter if present (?url=...&name=...)
+window.addEventListener("DOMContentLoaded", async () => {
+    const params = new URLSearchParams(window.location.search);
+    const url = params.get("url");
+    const name = params.get("name") || "schematic.schem";
+    if (url) {
+        spinner.style.display = "block";
+        const badge = document.getElementById("fileBadge");
+        badge.style.display = "inline-block";
+        badge.textContent = `🌐 Loading ${name}...`;
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error("Server returned HTTP " + resp.status);
+            const blob = await resp.blob();
+            const file = new File([blob], name);
+            await processFile(file);
+        } catch (err) {
+            console.error("Auto-load URL error:", err);
+            badge.textContent = `⚠️ Error loading ${name}`;
+            alert("Could not load schematic: " + err.message);
+        } finally {
+            spinner.style.display = "none";
+        }
+    }
+});
+
+async function processFile(file) {
+    spinner.style.display = "block";
+    document.getElementById("resultsWrapper").style.display = "none";
+
+    const badge = document.getElementById("fileBadge");
+    badge.style.display = "inline-block";
+    badge.textContent = `📁 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+
     try {
-        decompressed = pako.inflate(new Uint8Array(buffer)).buffer;
-    } catch (e) {
-        alert("File is not a valid schematic or is corrupted.");
-        return;
+        const arrayBuffer = await file.arrayBuffer();
+        let decompressedBuffer;
+
+        const header = new Uint8Array(arrayBuffer, 0, Math.min(arrayBuffer.byteLength, 4));
+
+        // Detect compression: GZIP (0x1F 0x8B), ZLIB (0x78)
+        if (header[0] === 0x1F && header[1] === 0x8B) {
+            decompressedBuffer = pako.ungzip(new Uint8Array(arrayBuffer)).buffer;
+        } else if (header[0] === 0x78) {
+            decompressedBuffer = pako.inflate(new Uint8Array(arrayBuffer)).buffer;
+        } else {
+            // Uncompressed NBT
+            decompressedBuffer = arrayBuffer;
+        }
+
+        const nbtData = NBT.read(decompressedBuffer);
+        const parsed = parseSchematicNBT(nbtData, file.name);
+
+        currentSchemData = parsed;
+        renderResults(parsed);
+    } catch (err) {
+        console.error("Scan error:", err);
+        alert("Failed to parse schematic: " + err.message);
+    } finally {
+        spinner.style.display = "none";
     }
+}
 
-    // parse NBT
-    const data = NBT.read(decompressed);
-    const v = data.value;
+// =========================================================
+// UNIVERSAL SCHEMATIC FORMAT PARSER
+// =========================================================
+function parseSchematicNBT(nbtRoot, fileName) {
+    const root = nbtRoot.value || {};
 
-    // Dimensions
-    const width = v.Width?.value || v.size?.value?.x || 0;
-    const height = v.Height?.value || v.size?.value?.y || 0;
-    const length = v.Length?.value || v.size?.value?.z || 0;
+    let width = 0, height = 0, length = 0;
+    let blockList = [];
+    let paletteMap = {};
+    let entitiesCount = 0;
+
+    // Detect format:
+    // 1. Sponge Schematic (.schem)
+    if (root.Width && root.Height && root.Length && (root.Palette || root.BlockData)) {
+        width = Number(root.Width.value);
+        height = Number(root.Height.value);
+        length = Number(root.Length.value);
+
+        if (root.Palette && root.Palette.value) {
+            for (const [key, tag] of Object.entries(root.Palette.value)) {
+                const val = tag && tag.value !== undefined ? tag.value : tag;
+                if (typeof val === "number") paletteMap[val] = key;
+                else paletteMap[key] = val;
+            }
+        }
+
+        const rawBlockData = root.BlockData ? root.BlockData.value : [];
+        blockList = NBT.decodeVarIntArray(rawBlockData, width * height * length);
+
+        if (root.Entities && root.Entities.value) entitiesCount = root.Entities.value.length;
+        if (root.BlockEntities && root.BlockEntities.value) entitiesCount += root.BlockEntities.value.length;
+    }
+    // 2. Vanilla Structure NBT (.nbt)
+    else if (root.size && root.palette && root.blocks) {
+        const sizeArr = root.size.value || [];
+        width = sizeArr[0] || 0;
+        height = sizeArr[1] || 0;
+        length = sizeArr[2] || 0;
+
+        const palList = root.palette.value || [];
+        palList.forEach((entry, idx) => {
+            const name = entry.Name ? entry.Name.value : "minecraft:air";
+            paletteMap[idx] = name;
+        });
+
+        const blocksArr = root.blocks.value || [];
+        const total = width * height * length;
+        blockList = new Array(total).fill(0); // initialize with 0 / air
+
+        blocksArr.forEach(b => {
+            const pos = b.pos ? b.pos.value : [0,0,0];
+            const state = b.state ? b.state.value : 0;
+            const idx = (pos[1] * length + pos[2]) * width + pos[0];
+            if (idx >= 0 && idx < total) blockList[idx] = state;
+        });
+
+        if (root.entities && root.entities.value) entitiesCount = root.entities.value.length;
+    }
+    // 3. Legacy Schematic (.schematic)
+    else if (root.Width && root.Height && root.Length && root.Blocks) {
+        width = Number(root.Width.value);
+        height = Number(root.Height.value);
+        length = Number(root.Length.value);
+        blockList = Array.from(root.Blocks.value || []);
+
+        const legacyMap = {
+            0: "minecraft:air", 1: "minecraft:stone", 2: "minecraft:grass_block",
+            3: "minecraft:dirt", 4: "minecraft:cobblestone", 5: "minecraft:oak_planks",
+            7: "minecraft:bedrock", 8: "minecraft:water", 9: "minecraft:water",
+            10: "minecraft:lava", 11: "minecraft:lava", 12: "minecraft:sand",
+            13: "minecraft:gravel", 14: "minecraft:gold_ore", 15: "minecraft:iron_ore",
+            17: "minecraft:oak_log", 18: "minecraft:oak_leaves", 20: "minecraft:glass",
+            35: "minecraft:white_wool", 41: "minecraft:gold_block", 42: "minecraft:iron_block",
+            45: "minecraft:bricks", 46: "minecraft:tnt", 47: "minecraft:bookshelf",
+            48: "minecraft:mossy_cobblestone", 49: "minecraft:obsidian", 50: "minecraft:torch",
+            54: "minecraft:chest", 56: "minecraft:diamond_ore", 57: "minecraft:diamond_block",
+            58: "minecraft:crafting_table", 61: "minecraft:furnace", 89: "minecraft:glowstone",
+            98: "minecraft:stone_bricks"
+        };
+        for (let i = 0; i < 256; i++) {
+            paletteMap[i] = legacyMap[i] || `minecraft:legacy_block_${i}`;
+        }
+
+        if (root.Entities && root.Entities.value) entitiesCount = root.Entities.value.length;
+        if (root.TileEntities && root.TileEntities.value) entitiesCount += root.TileEntities.value.length;
+    }
+    // 4. Litematica (.litematic)
+    else if (root.Regions && root.Regions.value) {
+        const regObj = root.Regions.value;
+        const regNames = Object.keys(regObj);
+        if (regNames.length > 0) {
+            const reg = regObj[regNames[0]].value;
+            width = Math.abs(reg.Size?.value?.x?.value || 0);
+            height = Math.abs(reg.Size?.value?.y?.value || 0);
+            length = Math.abs(reg.Size?.value?.z?.value || 0);
+
+            const paletteList = reg.BlockStatePalette?.value || [];
+            paletteList.forEach((entry, idx) => {
+                paletteMap[idx] = entry.Name ? entry.Name.value : "minecraft:air";
+            });
+
+            const total = width * height * length;
+            const blockStates = reg.BlockStates?.value || [];
+            const bits = Math.max(2, Math.ceil(Math.log2(paletteList.length || 2)));
+            const mask = (1n << BigInt(bits)) - 1n;
+
+            blockList = [];
+            let stateIdx = 0;
+            let bitOffset = 0n;
+
+            for (let i = 0; i < total && stateIdx < blockStates.length; i++) {
+                const currentLong = BigInt.asUintN(64, blockStates[stateIdx]);
+                let val;
+                if (bitOffset + BigInt(bits) <= 64n) {
+                    val = Number((currentLong >> bitOffset) & mask);
+                    bitOffset += BigInt(bits);
+                    if (bitOffset === 64n) {
+                        bitOffset = 0n;
+                        stateIdx++;
+                    }
+                } else {
+                    const nextLong = stateIdx + 1 < blockStates.length ? BigInt.asUintN(64, blockStates[stateIdx + 1]) : 0n;
+                    const firstBits = 64n - bitOffset;
+                    const secondBits = BigInt(bits) - firstBits;
+                    const firstPart = currentLong >> bitOffset;
+                    const secondPart = (nextLong & ((1n << secondBits) - 1n)) << firstBits;
+                    val = Number((firstPart | secondPart) & mask);
+                    bitOffset = secondBits;
+                    stateIdx++;
+                }
+                blockList.push(val);
+            }
+        }
+        if (root.Metadata && root.Metadata.value && root.Metadata.value.TotalBlocks) {
+            // metadata available
+        }
+    }
 
     const volume = width * height * length;
-
-    // Palette + BlockData
-    const palette = v.Palette?.value || v.palette?.value || {};
-    const blockData = v.BlockData?.value || v.blocks?.value || [];
-
+    const blockCounts = {};
     let solidCount = 0;
-    let blockCounts = {};
 
-    for (let i = 0; i < blockData.length; i++) {
-        const id = blockData[i];
-        const blockName = palette[id]?.value || "unknown";
+    // Voxel coordinates for 3D viewer
+    const voxels = [];
 
-        if (!blockCounts[blockName]) blockCounts[blockName] = 0;
-        blockCounts[blockName]++;
+    let idx = 0;
+    for (let y = 0; y < height; y++) {
+        for (let z = 0; z < length; z++) {
+            for (let x = 0; x < width; x++) {
+                if (idx >= blockList.length) break;
+                const id = blockList[idx++];
+                const rawName = paletteMap[id] || "minecraft:air";
+                const isAir = rawName.includes("air");
 
-        if (
-            blockName !== "minecraft:air" &&
-            blockName !== "minecraft:void_air" &&
-            blockName !== "minecraft:cave_air"
-        ) {
-            solidCount++;
+                if (!isAir) {
+                    solidCount++;
+                    const clean = formatCleanName(rawName);
+                    blockCounts[clean] = (blockCounts[clean] || 0) + 1;
+
+                    voxels.push({
+                        x: x - width / 2,
+                        y: y,
+                        z: z - length / 2,
+                        layerY: y,
+                        color: getBlockColor(rawName)
+                    });
+                }
+            }
         }
     }
 
-    // Most used block
-    let mostUsed = { name: "None", count: 0 };
-    for (const b in blockCounts) {
-        if (blockCounts[b] > mostUsed.count) {
-            mostUsed = { name: b, count: blockCounts[b] };
-        }
-    }
-
-    // Entity count
-    const entities = v.Entities?.value || [];
-    const entityCount = entities.length;
-
-    // Save for download
-    scanData = {
-        width, height, length, volume,
+    return {
+        fileName,
+        width, height, length,
+        volume,
         solidCount,
-        airCount: volume - solidCount,
-        mostUsed,
+        airCount: Math.max(0, volume - solidCount),
+        entitiesCount,
         blockCounts,
-        entityCount
+        voxels
+    };
+}
+
+// =========================================================
+// RENDER UI & STATS
+// =========================================================
+function renderResults(data) {
+    document.getElementById("resultsWrapper").style.display = "block";
+
+    document.getElementById("statDim").textContent = `${data.width} × ${data.height} × ${data.length}`;
+    document.getElementById("statVol").textContent = data.volume.toLocaleString();
+    document.getElementById("statSolid").textContent = data.solidCount.toLocaleString();
+    document.getElementById("statAir").textContent = data.airCount.toLocaleString();
+    document.getElementById("statUnique").textContent = Object.keys(data.blockCounts).length;
+    document.getElementById("statEntities").textContent = data.entitiesCount;
+
+    // Setup 3D Canvas
+    init3DViewer(data);
+
+    // Setup Material Table
+    renderMaterialTable();
+    renderStatsBars();
+}
+
+// =========================================================
+// 3D VOXEL VIEWER (THREE.JS INSTANCEDMESH)
+// =========================================================
+function init3DViewer(data) {
+    const container = document.getElementById("canvas3dContainer");
+    const canvas = document.getElementById("canvas3d");
+
+    const width = container.clientWidth || 900;
+    const height = 480;
+
+    if (threeApp) {
+        cancelAnimationFrame(threeApp.frameId);
+        threeApp.renderer.dispose();
+    }
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0e0e0e);
+
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    const maxDim = Math.max(data.width, data.height, data.length);
+    camera.position.set(maxDim * 1.5, maxDim * 1.2, maxDim * 1.8);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, data.height / 2, 0);
+    controls.update();
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight1.position.set(50, 100, 50);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+    dirLight2.position.set(-50, 50, -50);
+    scene.add(dirLight2);
+
+    // Grid floor
+    const gridHelper = new THREE.GridHelper(Math.max(data.width, data.length) * 1.5, 20, 0x4db8ff, 0x222222);
+    gridHelper.position.y = -0.5;
+    scene.add(gridHelper);
+
+    // Build InstancedMesh
+    const voxels = data.voxels;
+    const totalCount = voxels.length;
+
+    const boxGeo = new THREE.BoxGeometry(0.96, 0.96, 0.96);
+    const boxMat = new THREE.MeshLambertMaterial();
+    const instancedMesh = new THREE.InstancedMesh(boxGeo, boxMat, Math.max(1, totalCount));
+
+    const dummy = new THREE.Object3D();
+    const tempColor = new THREE.Color();
+
+    for (let i = 0; i < totalCount; i++) {
+        const v = voxels[i];
+        dummy.position.set(v.x, v.y, v.z);
+        dummy.updateMatrix();
+        instancedMesh.setMatrixAt(i, dummy.matrix);
+
+        tempColor.setHex(v.color);
+        instancedMesh.setColorAt(i, tempColor);
+    }
+
+    instancedMesh.instanceMatrix.needsUpdate = true;
+    if (instancedMesh.instanceColor) instancedMesh.instanceColor.needsUpdate = true;
+    scene.add(instancedMesh);
+
+    document.getElementById("renderCountBadge").textContent = `Rendered: ${totalCount.toLocaleString()} voxels`;
+
+    // Slider setup
+    const slider = document.getElementById("layerSlider");
+    slider.max = data.height;
+    slider.value = data.height;
+    document.getElementById("layerLabel").textContent = `1 to ${data.height} (All)`;
+
+    slider.oninput = (e) => {
+        const maxLayer = parseInt(e.target.value);
+        document.getElementById("layerLabel").textContent = `1 to ${maxLayer}`;
+
+        for (let i = 0; i < totalCount; i++) {
+            const v = voxels[i];
+            if (v.layerY < maxLayer) {
+                dummy.position.set(v.x, v.y, v.z);
+                dummy.scale.set(1, 1, 1);
+            } else {
+                dummy.scale.set(0, 0, 0);
+            }
+            dummy.updateMatrix();
+            instancedMesh.setMatrixAt(i, dummy.matrix);
+        }
+        instancedMesh.instanceMatrix.needsUpdate = true;
     };
 
-    displayResults();
-}
-
-function displayResults() {
-    const r = document.getElementById("results");
-    r.style.display = "block";
-
-    r.innerHTML = `
-        <h2>Results</h2>
-        <p><strong>Dimensions:</strong> ${scanData.width} × ${scanData.height} × ${scanData.length}</p>
-        <p><strong>Total Volume (with air):</strong> ${scanData.volume.toLocaleString()}</p>
-        <p><strong>Solid Blocks:</strong> ${scanData.solidCount.toLocaleString()}</p>
-        <p><strong>Air Blocks:</strong> ${scanData.airCount.toLocaleString()}</p>
-        <p><strong>Most Used Block:</strong> ${scanData.mostUsed.name} (${scanData.mostUsed.count})</p>
-        <p><strong>Tile Entities:</strong> ${scanData.entityCount}</p>
-
-        <h3>Block List</h3>
-        <div class="block-list">
-            ${Object.entries(scanData.blockCounts)
-                .map(([name, count]) => `<p>${name}: ${count}</p>`)
-                .join("")}
-        </div>
-    `;
-
-    document.getElementById("downloadBtn").style.display = "block";
-}
-
-function downloadReport() {
-    let txt = `Schematic Analysis\n------------------\n`;
-    txt += `Dimensions: ${scanData.width} × ${scanData.height} × ${scanData.length}\n`;
-    txt += `Total Volume: ${scanData.volume}\n`;
-    txt += `Solid Blocks: ${scanData.solidCount}\n`;
-    txt += `Air Blocks: ${scanData.airCount}\n`;
-    txt += `Most Used Block: ${scanData.mostUsed.name} (${scanData.mostUsed.count})\n`;
-    txt += `Tile Entities: ${scanData.entityCount}\n\n`;
-    txt += `Block List:\n`;
-
-    for (const b in scanData.blockCounts) {
-        txt += `- ${b}: ${scanData.blockCounts[b]}\n`;
+    function animate() {
+        threeApp.frameId = requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
     }
 
-    const blob = new Blob([txt], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
+    threeApp = {
+        scene, camera, renderer, controls, gridHelper, instancedMesh, maxDim, data
+    };
 
+    animate();
+}
+
+function resetCamera() {
+    if (!threeApp) return;
+    const d = threeApp.maxDim;
+    threeApp.camera.position.set(d * 1.5, d * 1.2, d * 1.8);
+    threeApp.controls.target.set(0, threeApp.data.height / 2, 0);
+    threeApp.controls.update();
+}
+
+function toggleGrid() {
+    if (!threeApp || !threeApp.gridHelper) return;
+    threeApp.gridHelper.visible = !threeApp.gridHelper.visible;
+    const btn = document.getElementById("gridToggleBtn");
+    btn.style.borderColor = threeApp.gridHelper.visible ? "#4db8ff" : "#444";
+}
+
+// =========================================================
+// MATERIAL CALCULATOR TABLE & FILTERS
+// =========================================================
+const matSearch = document.getElementById("matSearch");
+const matCategoryFilter = document.getElementById("matCategoryFilter");
+const matSortFilter = document.getElementById("matSortFilter");
+
+matSearch.oninput = renderMaterialTable;
+matCategoryFilter.onchange = renderMaterialTable;
+matSortFilter.onchange = renderMaterialTable;
+
+function renderMaterialTable() {
+    if (!currentSchemData) return;
+
+    const tbody = document.getElementById("materialsTableBody");
+    tbody.innerHTML = "";
+
+    const query = matSearch.value.trim().toLowerCase();
+    const categoryFilter = matCategoryFilter.value;
+    const sort = matSortFilter.value;
+
+    let items = Object.entries(currentSchemData.blockCounts).map(([name, count]) => {
+        return {
+            name,
+            count,
+            category: getBlockCategory(name),
+            color: getBlockColor(name)
+        };
+    });
+
+    // Filter
+    if (query) {
+        items = items.filter(it => it.name.toLowerCase().includes(query));
+    }
+    if (categoryFilter !== "all") {
+        items = items.filter(it => it.category === categoryFilter);
+    }
+
+    // Sort
+    if (sort === "count-desc") items.sort((a, b) => b.count - a.count);
+    else if (sort === "count-asc") items.sort((a, b) => a.count - b.count);
+    else if (sort === "name-asc") items.sort((a, b) => a.name.localeCompare(b.name));
+
+    if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:#777;">No matching materials found.</td></tr>`;
+        return;
+    }
+
+    items.forEach(it => {
+        const hexColor = "#" + it.color.toString(16).padStart(6, "0");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td style="text-align:center;">
+                <input type="checkbox" class="checkbox-collected" title="Mark as collected">
+            </td>
+            <td>
+                <div class="block-pill">
+                    <span class="block-color-dot" style="background-color: ${hexColor};"></span>
+                    <span>${it.name}</span>
+                </div>
+            </td>
+            <td><span style="color:#aaa; font-size:0.85rem;">${it.category}</span></td>
+            <td><strong>${it.count.toLocaleString()}</strong></td>
+            <td><span class="stack-badge">${formatStacks(it.count)}</span></td>
+        `;
+
+        const check = tr.querySelector(".checkbox-collected");
+        check.onchange = () => {
+            tr.style.opacity = check.checked ? "0.4" : "1";
+            tr.style.textDecoration = check.checked ? "line-through" : "none";
+        };
+
+        tbody.appendChild(tr);
+    });
+}
+
+function renderStatsBars() {
+    if (!currentSchemData) return;
+    const container = document.getElementById("topBlocksBars");
+    container.innerHTML = "";
+
+    const sorted = Object.entries(currentSchemData.blockCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    const maxCount = sorted[0] ? sorted[0][1] : 1;
+
+    sorted.forEach(([name, count]) => {
+        const pct = ((count / currentSchemData.solidCount) * 100).toFixed(1);
+        const barWidth = Math.max(5, (count / maxCount) * 100);
+        const hexColor = "#" + getBlockColor(name).toString(16).padStart(6, "0");
+
+        const row = document.createElement("div");
+        row.style.marginBottom = "14px";
+        row.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.9rem;">
+                <span><strong>${name}</strong></span>
+                <span style="color:#aaa;">${count.toLocaleString()} (${pct}%)</span>
+            </div>
+            <div class="bar-container">
+                <div class="bar-fill" style="width: ${barWidth}%; background: ${hexColor};"></div>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById("tabMatBtn").classList.toggle("active", tab === "materials");
+    document.getElementById("tabStatsBtn").classList.toggle("active", tab === "stats");
+    document.getElementById("tabMaterialsView").style.display = tab === "materials" ? "block" : "none";
+    document.getElementById("tabStatsView").style.display = tab === "stats" ? "block" : "none";
+}
+
+// =========================================================
+// EXPORTS & SHARING
+// =========================================================
+function copyDiscordList() {
+    if (!currentSchemData) return;
+
+    let text = `📦 **${currentSchemData.fileName}** Materials (${currentSchemData.width}x${currentSchemData.height}x${currentSchemData.length})\n`;
+    text += `Total Solid Blocks: ${currentSchemData.solidCount.toLocaleString()}\n`;
+    text += `----------------------------------------\n`;
+
+    const sorted = Object.entries(currentSchemData.blockCounts).sort((a, b) => b[1] - a[1]);
+    sorted.forEach(([name, count]) => {
+        text += `• **${name}**: ${count} (${formatStacks(count)})\n`;
+    });
+
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Discord Material List copied to clipboard!");
+    }).catch(() => {
+        alert("Clipboard access failed. Use Download Report instead.");
+    });
+}
+
+function downloadCSV() {
+    if (!currentSchemData) return;
+
+    let csv = "Block Name,Category,Total Quantity,Stacks,Remainder\n";
+    const sorted = Object.entries(currentSchemData.blockCounts).sort((a, b) => b[1] - a[1]);
+
+    sorted.forEach(([name, count]) => {
+        const cat = getBlockCategory(name);
+        const stacks = Math.floor(count / 64);
+        const rem = count % 64;
+        csv += `"${name}","${cat}",${count},${stacks},${rem}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "schematic_report.txt";
+    a.download = `${currentSchemData.fileName.replace(/\.[^/.]+$/, "")}_materials.csv`;
     a.click();
+    URL.revokeObjectURL(url);
+}
 
+function downloadTextReport() {
+    if (!currentSchemData) return;
+
+    let txt = `=================================================\n`;
+    txt += `ProsperMC Schematic Analysis\n`;
+    txt += `File: ${currentSchemData.fileName}\n`;
+    txt += `Dimensions: ${currentSchemData.width} x ${currentSchemData.height} x ${currentSchemData.length}\n`;
+    txt += `Total Volume: ${currentSchemData.volume.toLocaleString()}\n`;
+    txt += `Solid Blocks: ${currentSchemData.solidCount.toLocaleString()}\n`;
+    txt += `Air Blocks: ${currentSchemData.airCount.toLocaleString()}\n`;
+    txt += `Tile Entities: ${currentSchemData.entitiesCount}\n`;
+    txt += `=================================================\n\n`;
+    txt += `SURVIVAL MATERIAL REQUIREMENTS:\n`;
+
+    const sorted = Object.entries(currentSchemData.blockCounts).sort((a, b) => b[1] - a[1]);
+    sorted.forEach(([name, count]) => {
+        txt += `- ${name}: ${count} [${formatStacks(count)}]\n`;
+    });
+
+    const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${currentSchemData.fileName.replace(/\.[^/.]+$/, "")}_report.txt`;
+    a.click();
     URL.revokeObjectURL(url);
 }
 </script>
