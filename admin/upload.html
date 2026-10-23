@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Upload – Prosper</title>
     <link rel="stylesheet" href="../style.css?v=22">
 
@@ -111,14 +112,14 @@
         <div class="container">
             <h1 class="logo pixel">⛏️ Prosper Admin</h1>
             <ul class="nav-links">
-                <li><a href="/prosper/index.html">Home</a></li>
-                <li><a href="/prosper/modpacks.html">Modpacks</a></li>
-                <li><a href="/prosper/schematics.html">Schematics</a></li>
-                <li><a href="/prosper/videos.html">Videos</a></li>
-                <li><a href="/prosper/dashboard.html">Dashboard</a></li>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../modpacks.html">Modpacks</a></li>
+                <li><a href="../schematics.html">Schematics</a></li>
+                <li><a href="../videos.html">Videos</a></li>
+                <li><a href="../dashboard.html">Dashboard</a></li>
 
-                <li><a href="/prosper/admin/upload.html" class="active" id="uploadTab">Upload</a></li>
-                <li><a href="/prosper/login.html">Login</a></li>
+                <li><a href="upload.html" class="active" id="uploadTab">Upload</a></li>
+                <li><a href="../login.html">Login</a></li>
             </ul>
         </div>
     </nav>
@@ -175,8 +176,8 @@
     </div>
 </div>
 
-<!-- ⭐ MODULE SCRIPT -->
-<script type="module">
+<!-- ⭐ SCRIPT -->
+<script>
     const client = supabase.createClient(
         "https://pnkwqqapyoaxdcpubpwb.supabase.co",
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
@@ -185,21 +186,36 @@
     let currentUser = null;
     let solidBlockCount = 0;
 
+    // Helper to verify if user has admin role
+    async function checkIsAdmin(user) {
+        if (!user) return false;
+        if (user.user_metadata && user.user_metadata.role === "admin") return true;
+
+        const { data: profile } = await client
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        return profile && profile.role === "admin";
+    }
+
     // ⭐ ADMIN CHECK
     async function checkAdmin() {
         const { data: { session } } = await client.auth.getSession();
 
         if (!session) {
             alert("You must be logged in.");
-            window.location.href = "/prosper/login.html";
+            window.location.href = "../login.html";
             return;
         }
 
         const user = session.user;
+        const isAdmin = await checkIsAdmin(user);
 
-        if (!user.user_metadata || user.user_metadata.role !== "admin") {
+        if (!isAdmin) {
             alert("Access denied — admin only.");
-            window.location.href = "/prosper/login.html";
+            window.location.href = "../login.html";
             return;
         }
 
@@ -256,17 +272,23 @@
                 }
 
                 const schem = data.value;
+                const palette = schem.Palette ? schem.Palette.value : null;
+                const blockData = schem.BlockData ? schem.BlockData.value : null;
 
-                const palette = schem.Palette.value;
-                const blockData = schem.BlockData.value;
+                if (!palette || !blockData) {
+                    document.getElementById("blockCountDisplay").innerText =
+                        "Schematic parsed (no block data found).";
+                    return;
+                }
 
                 let count = 0;
 
                 for (let i = 0; i < blockData.length; i++) {
                     const id = blockData[i];
-                    const blockName = palette[id].value;
+                    const blockName = palette[id]?.value;
 
                     if (
+                        blockName &&
                         blockName !== "minecraft:air" &&
                         blockName !== "minecraft:void_air" &&
                         blockName !== "minecraft:cave_air"
@@ -288,7 +310,7 @@
     document.getElementById("uploadBtn").onclick = async () => {
         if (!currentUser) {
             alert("Session expired. Log in again.");
-            window.location.href = "/prosper/login.html";
+            window.location.href = "../login.html";
             return;
         }
 
@@ -323,7 +345,7 @@
 
         if (schemErr) {
             console.error(schemErr);
-            alert("Error uploading schematic.");
+            alert("Error uploading schematic: " + schemErr.message);
             return;
         }
 
@@ -342,7 +364,7 @@
 
         if (imgErr) {
             console.error(imgErr);
-            alert("Error uploading image.");
+            alert("Error uploading image: " + imgErr.message);
             return;
         }
 
@@ -361,37 +383,18 @@
                 image: imageURL,
                 author: author,
                 uploaded_by: currentUser.id,
-                block_count: solidBlockCount,   // ⭐ SAVED HERE
+                block_count: solidBlockCount,
                 created_at: new Date().toISOString()
             });
 
         if (dbErr) {
             console.error(dbErr);
-            alert("Error saving metadata.");
+            alert("Error saving metadata: " + dbErr.message);
             return;
         }
 
         alert("Upload complete!");
     };
-
-    // ⭐ ADMIN VISIBILITY FIXED
-    async function applyAdminVisibility() {
-        const uploadTab = document.getElementById("uploadTab");
-
-        const { data: { session } } = await client.auth.getSession();
-        if (!session) {
-            uploadTab.style.display = "none";
-            return;
-        }
-
-        const user = session.user;
-
-        if (!user.user_metadata || user.user_metadata.role !== "admin") {
-            uploadTab.style.display = "none";
-        }
-    }
-
-    applyAdminVisibility();
 </script>
 
 </body>

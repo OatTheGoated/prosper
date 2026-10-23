@@ -1,48 +1,75 @@
-<script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+/**
+ * ProsperMC - Auth & Supabase Client Helper
+ */
 
-    // ⭐ Your real Supabase project
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
-    );
+const SUPABASE_URL = "https://pnkwqqapyoaxdcpubpwb.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc";
 
-    const status = document.getElementById("status");
-    const loginBtn = document.getElementById("loginBtn");
+// Initialize client if supabase global is available
+let client = null;
+if (typeof supabase !== "undefined" && supabase.createClient) {
+    client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.client = client;
+}
 
-    loginBtn.onclick = async () => {
-        const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value.trim();
+const AuthSystem = {
+    client,
+    url: SUPABASE_URL,
+    key: SUPABASE_ANON_KEY,
 
-        if (!email || !password) {
-            status.textContent = "Enter an email and password.";
-            status.style.color = "#ff6b6b";
-            return;
+    getClient() {
+        if (!client && typeof supabase !== "undefined" && supabase.createClient) {
+            client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            window.client = client;
+            this.client = client;
         }
+        return client;
+    },
 
-        status.textContent = "Logging in...";
-        status.style.color = "#00ff88";
+    async getUser() {
+        const c = this.getClient();
+        if (!c) return null;
+        const { data: { user } } = await c.auth.getUser();
+        return user;
+    },
 
-        // ⭐ Supabase login
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
+    async getProfile(userId) {
+        const c = this.getClient();
+        if (!c || !userId) return null;
+        const { data: profile } = await c
+            .from("profiles")
+            .select("*")
+            .eq("id", userId)
+            .maybeSingle();
+        return profile;
+    },
 
-        if (error) {
-            status.textContent = error.message;
-            status.style.color = "#ff6b6b";
-            return;
-        }
+    async isAdmin() {
+        const user = await this.getUser();
+        if (!user) return false;
+        if (user.user_metadata && user.user_metadata.role === "admin") return true;
+        const profile = await this.getProfile(user.id);
+        return profile && profile.role === "admin";
+    },
 
-        const { data: { user } } = await supabase.auth.getUser();
+    async applyAdminVisibility(uploadTabId = "uploadTab") {
+        const tab = document.getElementById(uploadTabId);
+        if (!tab) return;
+        const admin = await this.isAdmin();
+        tab.style.display = admin ? "" : "none";
+    },
 
-        if (!user) {
-            status.textContent = "Unexpected error: no user returned.";
-            status.style.color = "#ff6b6b";
-            return;
-        }
+    async login(email, password) {
+        const c = this.getClient();
+        if (!c) throw new Error("Supabase client is not loaded.");
+        return await c.auth.signInWithPassword({ email, password });
+    },
 
-        window.location.href = "/prosper/dashboard.html";
-    };
-</script>
+    async logout(redirectTo = "index.html") {
+        const c = this.getClient();
+        if (c) await c.auth.signOut();
+        if (redirectTo) window.location.href = redirectTo;
+    }
+};
+
+window.AuthSystem = AuthSystem;

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register – Prosper</title>
     <link rel="stylesheet" href="./style.css?v=30">
 
@@ -17,14 +18,32 @@
 
 <body>
 <div class="site">
-    <h1 class="pixel" style="text-align:center;">Create Account</h1>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo pixel">⛏️ Prosper</h1>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="modpacks.html">Modpacks</a></li>
+                <li><a href="schematics.html">Schematics</a></li>
+                <li><a href="videos.html">Videos</a></li>
+                <li><a href="login.html">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <h1 class="pixel" style="text-align:center; margin-top: 30px;">Create Account</h1>
 
     <div class="form-box">
         <input id="email" type="email" placeholder="Email">
-        <input id="password" type="password" placeholder="Password">
+        <input id="password" type="password" placeholder="Password (min 6 characters)">
         <input id="username" type="text" placeholder="Username">
         <button id="registerBtn">Register</button>
-        <p id="msg"></p>
+        <p id="msg" style="margin-top: 15px; font-weight: bold;"></p>
+
+        <div style="margin-top: 20px; text-align: center; font-size: 0.95rem;">
+            <p>Already have an account? <a href="login.html" style="color: #ff4d4d; text-decoration: underline;">Log in here</a></p>
+            <p style="margin-top: 10px;"><a href="index.html" style="color: #aaa; text-decoration: none;">← Back to Home</a></p>
+        </div>
     </div>
 </div>
 
@@ -34,6 +53,12 @@
     const usernameInput = document.getElementById("username");
     const msg = document.getElementById("msg");
 
+    [emailInput, passwordInput, usernameInput].forEach(input => {
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") document.getElementById("registerBtn").click();
+        });
+    });
+
     document.getElementById("registerBtn").onclick = async () => {
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
@@ -41,43 +66,59 @@
 
         if (!email || !password || !username) {
             msg.textContent = "Please fill in all fields.";
+            msg.style.color = "#ff6b6b";
+            return;
+        }
+
+        if (password.length < 6) {
+            msg.textContent = "Password must be at least 6 characters.";
+            msg.style.color = "#ff6b6b";
             return;
         }
 
         msg.textContent = "Creating account...";
+        msg.style.color = "#4db8ff";
 
-        // ⭐ FIXED SIGNUP WITH CORRECT REDIRECT URL
+        // Dynamic redirect URL that works both locally and on GitHub Pages
+        const redirectUrl = window.location.origin + window.location.pathname.replace("register.html", "login.html");
+
         const { data, error } = await client.auth.signUp({
             email,
             password,
             options: {
-                emailRedirectTo: "https://oatthegoated.github.io/prosper/login.html"
+                emailRedirectTo: redirectUrl
             }
         });
 
         if (error) {
             msg.textContent = error.message;
+            msg.style.color = "#ff6b6b";
             return;
         }
 
         const user = data.user;
         if (!user) {
-            msg.textContent = "Unexpected error.";
+            msg.textContent = "Unexpected error during registration.";
+            msg.style.color = "#ff6b6b";
             return;
         }
 
-        await client.from("profiles").insert({
+        // Create profile in profiles table
+        const { error: profileError } = await client.from("profiles").upsert({
             id: user.id,
             email,
             username,
             role: "user"
         });
 
-        msg.textContent = "Account created! Check your email to confirm.";
+        if (profileError) {
+            console.warn("Profile insert warning:", profileError.message);
+        }
+
+        msg.textContent = "Account created! Check your email to confirm, then log in.";
+        msg.style.color = "#00ff88";
     };
 </script>
 
 </body>
 </html>
-
-

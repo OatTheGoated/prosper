@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – Prosper</title>
     <link rel="stylesheet" href="./style.css?v=30">
 
@@ -16,13 +17,31 @@
 
 <body>
 <div class="site">
-    <h1 class="pixel" style="text-align:center;">Login</h1>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo pixel">⛏️ Prosper</h1>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="modpacks.html">Modpacks</a></li>
+                <li><a href="schematics.html">Schematics</a></li>
+                <li><a href="videos.html">Videos</a></li>
+                <li><a href="login.html" class="active">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <h1 class="pixel" style="text-align:center; margin-top: 30px;">Login</h1>
 
     <div class="form-box">
         <input id="email" type="email" placeholder="Email">
         <input id="password" type="password" placeholder="Password">
         <button id="loginBtn">Login</button>
-        <p id="msg"></p>
+        <p id="msg" style="margin-top: 15px; font-weight: bold;"></p>
+
+        <div style="margin-top: 20px; text-align: center; font-size: 0.95rem;">
+            <p>Don't have an account? <a href="register.html" style="color: #ff4d4d; text-decoration: underline;">Create one here</a></p>
+            <p style="margin-top: 10px;"><a href="index.html" style="color: #aaa; text-decoration: none;">← Back to Home</a></p>
+        </div>
     </div>
 </div>
 
@@ -31,42 +50,52 @@
     const passwordInput = document.getElementById("password");
     const msg = document.getElementById("msg");
 
+    // Allow Enter key to trigger login
+    [emailInput, passwordInput].forEach(input => {
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") document.getElementById("loginBtn").click();
+        });
+    });
+
     document.getElementById("loginBtn").onclick = async () => {
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
 
         if (!email || !password) {
-            msg.textContent = "Please enter both fields.";
+            msg.textContent = "Please enter both email and password.";
+            msg.style.color = "#ff6b6b";
             return;
         }
 
         msg.textContent = "Logging in...";
+        msg.style.color = "#4db8ff";
 
         const { error } = await client.auth.signInWithPassword({ email, password });
 
         if (error) {
             msg.textContent = error.message;
+            msg.style.color = "#ff6b6b";
             return;
         }
 
         msg.textContent = "Success! Loading session...";
+        msg.style.color = "#00ff88";
 
-        // ⭐ Wait for Supabase to fully restore the session
+        // Wait for session
         let tries = 0;
         let session = null;
 
         while (tries < 10) {
             const { data } = await client.auth.getSession();
             session = data.session;
-
             if (session) break;
-
             await new Promise(r => setTimeout(r, 200));
             tries++;
         }
 
         if (!session) {
             msg.textContent = "Error: Session did not load. Try again.";
+            msg.style.color = "#ff6b6b";
             return;
         }
 
@@ -77,4 +106,3 @@
 
 </body>
 </html>
-

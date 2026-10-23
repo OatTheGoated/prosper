@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choose Username</title>
+    <title>Choose Username – Prosper</title>
     <link rel="stylesheet" href="./style.css?v=22">
+
+    <!-- Supabase UMD -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const client = supabase.createClient(
+            "https://pnkwqqapyoaxdcpubpwb.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBua3dxcWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+        );
+    </script>
 </head>
 
 <body>
@@ -21,9 +30,9 @@
                 <li><a href="dashboard.html">Dashboard</a></li>
 
                 <!-- ⭐ Upload tab (admin only) -->
-                <li><a href="/prosper/admin/upload.html" id="uploadTab">Upload</a></li>
+                <li><a href="admin/upload.html" id="uploadTab" style="display:none;">Upload</a></li>
 
-                <li><a href="login.html">Login</a></li>
+                <li><a href="login.html" id="authNavBtn">Login</a></li>
             </ul>
         </div>
     </nav>
@@ -34,30 +43,62 @@
 
         <div class="auth-box" style="margin-top:20px;">
             <input id="username" placeholder="Enter a username">
-            <button class="btn-red" onclick="saveUsername()">Save Username</button>
-            <p id="status" class="pixel-small" style="margin-top:20px; color: #00ff88;"></p>
+            <button class="btn-red" id="saveUsernameBtn">Save Username</button>
+            <p id="status" class="pixel-small" style="margin-top:20px;"></p>
         </div>
     </section>
 
 </div>
 
-<!-- ⭐ USERNAME SCRIPT (Supabase version) -->
-<script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+<script>
+    const status = document.getElementById("status");
+    const usernameInput = document.getElementById("username");
+    const saveBtn = document.getElementById("saveUsernameBtn");
+    const uploadTab = document.getElementById("uploadTab");
+    const authNavBtn = document.getElementById("authNavBtn");
 
-    const supabase = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
-    );
+    async function initUser() {
+        const { data: { user } } = await client.auth.getUser();
 
-    window.saveUsername = async function () {
-        const status = document.getElementById("status");
-        const username = document.getElementById("username").value.trim();
+        if (!user) {
+            status.textContent = "You must be logged in to set a username.";
+            status.style.color = "#ff6b6b";
+            saveBtn.disabled = true;
+            return;
+        }
+
+        authNavBtn.textContent = "Logout";
+        authNavBtn.href = "#";
+        authNavBtn.onclick = async (e) => {
+            e.preventDefault();
+            await client.auth.signOut();
+            window.location.href = "login.html";
+        };
+
+        // Load existing profile
+        const { data: profile } = await client
+            .from("profiles")
+            .select("username, role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (profile) {
+            if (profile.username) {
+                usernameInput.value = profile.username;
+            }
+            if (profile.role === "admin" || user.user_metadata?.role === "admin") {
+                uploadTab.style.display = "inline-block";
+            }
+        }
+    }
+
+    saveBtn.onclick = async function () {
+        const username = usernameInput.value.trim();
 
         status.style.color = "#00ff88";
         status.textContent = "Checking...";
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await client.auth.getUser();
 
         if (!user) {
             status.textContent = "You must be logged in.";
@@ -71,11 +112,11 @@
             return;
         }
 
-        // ⭐ Check if username is taken
-        const { data: existing, error: lookupError } = await supabase
+        // Check if username is taken by another user
+        const { data: existing, error: lookupError } = await client
             .from("profiles")
             .select("id")
-            .eq("Username", username);
+            .eq("username", username);
 
         if (lookupError) {
             status.textContent = "Error checking username: " + lookupError.message;
@@ -89,14 +130,14 @@
             return;
         }
 
-        // ⭐ Update username
-        const { error: updateError } = await supabase
+        // Update username in profiles table
+        const { error: updateError } = await client
             .from("profiles")
-            .update({
-                Username: username,
-                Email: user.email
-            })
-            .eq("id", user.id);
+            .upsert({
+                id: user.id,
+                username: username,
+                email: user.email
+            });
 
         if (updateError) {
             status.textContent = "Error saving username: " + updateError.message;
@@ -104,36 +145,15 @@
             return;
         }
 
-        status.textContent = "Username saved! Redirecting...";
+        status.textContent = "Username saved! Redirecting to dashboard...";
         status.style.color = "#00ff88";
 
         setTimeout(() => {
             window.location.href = "dashboard.html";
         }, 800);
     };
-</script>
 
-<!-- ⭐ ADMIN VISIBILITY SCRIPT -->
-<script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    const supabaseAdmin = createClient(
-        "https://pnkwqqapyoxadcpubpwb.supabase.co",
-        "sb_publishable_FOGjeeE78yPzd0dIz-18XQ_t2J6MMLz"
-    );
-
-    async function applyAdminVisibility() {
-        const uploadTab = document.getElementById("uploadTab");
-        if (!uploadTab) return;
-
-        const { data: { user } } = await supabaseAdmin.auth.getUser();
-
-        if (!user || user.user_metadata?.role !== "admin") {
-            uploadTab.style.display = "none";
-        }
-    }
-
-    applyAdminVisibility();
+    initUser();
 </script>
 
 </body>
