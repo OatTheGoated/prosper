@@ -918,7 +918,8 @@ function parseSchematicNBT(nbtRoot, fileName) {
                         z: z - length / 2,
                         layerY: y,
                         color: getBlockColor(rawName),
-                        blockName: cleanId
+                        blockName: cleanId,
+                        rawName: rawName
                     });
                 }
             }
@@ -959,7 +960,7 @@ function renderResults(data) {
 }
 
 // =========================================================
-// MINECRAFT TEXTURE ENGINE (AUTHENTIC IN-GAME 16x16 TEXTURES)
+// MINECRAFT TEXTURE ENGINE (CRISP 16x16 TEXTURES, NO HAZE)
 // =========================================================
 const TEXTURE_CDN = "https://cdn.jsdelivr.net/gh/InventivetalentDev/minecraft-assets@1.20.4/assets/minecraft/textures/block/";
 const textureCache = {};
@@ -979,6 +980,7 @@ function loadMinecraftTexture(fileName) {
             t.magFilter = THREE.NearestFilter;
             t.minFilter = THREE.NearestFilter;
             t.generateMipmaps = false;
+            t.encoding = THREE.sRGBEncoding;
             t.needsUpdate = true;
         },
         undefined,
@@ -988,6 +990,7 @@ function loadMinecraftTexture(fileName) {
     tex.magFilter = THREE.NearestFilter;
     tex.minFilter = THREE.NearestFilter;
     tex.generateMipmaps = false;
+    tex.encoding = THREE.sRGBEncoding;
 
     textureCache[fileName] = tex;
     return tex;
@@ -995,6 +998,8 @@ function loadMinecraftTexture(fileName) {
 
 function getTextureFileName(blockName) {
     const b = (blockName || "").toLowerCase();
+    if (b.includes("smooth_sandstone")) return "sandstone_top.png";
+    if (b.includes("sandstone")) return "sandstone.png";
     if (b.includes("stone_brick")) return "stone_bricks.png";
     if (b.includes("smooth_stone")) return "smooth_stone.png";
     if (b.includes("mossy_cobblestone")) return "mossy_cobblestone.png";
@@ -1011,17 +1016,16 @@ function getTextureFileName(blockName) {
     if (b.includes("deepslate")) return "deepslate.png";
     if (b.includes("grass_block")) return "grass_block_top.png";
     if (b.includes("dirt") || b.includes("podzol")) return "dirt.png";
-    if (b.includes("sandstone")) return "sandstone.png";
     if (b.includes("sand")) return "sand.png";
     if (b.includes("gravel")) return "gravel.png";
+    if (b.includes("stripped_mangrove")) return "stripped_mangrove_log.png";
+    if (b.includes("stripped_oak")) return "stripped_oak_log.png";
+    if (b.includes("stripped_spruce")) return "stripped_spruce_log.png";
     if (b.includes("oak_log")) return "oak_log.png";
     if (b.includes("spruce_log")) return "spruce_log.png";
     if (b.includes("birch_log")) return "birch_log.png";
     if (b.includes("dark_oak_log")) return "dark_oak_log.png";
     if (b.includes("acacia_log")) return "acacia_log.png";
-    if (b.includes("stripped_oak")) return "stripped_oak_log.png";
-    if (b.includes("stripped_spruce")) return "stripped_spruce_log.png";
-    if (b.includes("stripped_mangrove")) return "stripped_mangrove_log.png";
     if (b.includes("oak_plank") || b.includes("plank")) return "oak_planks.png";
     if (b.includes("spruce_plank")) return "spruce_planks.png";
     if (b.includes("birch_plank")) return "birch_planks.png";
@@ -1062,59 +1066,148 @@ function getTextureFileName(blockName) {
     return "stone.png";
 }
 
-function getSideTextures(blockName) {
-    const b = (blockName || "").toLowerCase();
-    if (b.includes("grass_block")) {
-        return { side: "grass_block_side.png", top: "grass_block_top.png", bottom: "dirt.png" };
-    }
-    if (b.includes("podzol")) {
-        return { side: "podzol_side.png", top: "podzol_top.png", bottom: "dirt.png" };
-    }
-    if (b.includes("oak_log")) {
-        return { side: "oak_log.png", top: "oak_log_top.png", bottom: "oak_log_top.png" };
-    }
-    if (b.includes("spruce_log")) {
-        return { side: "spruce_log.png", top: "spruce_log_top.png", bottom: "spruce_log_top.png" };
-    }
-    if (b.includes("birch_log")) {
-        return { side: "birch_log.png", top: "birch_log_top.png", bottom: "birch_log_top.png" };
-    }
-    if (b.includes("dark_oak_log")) {
-        return { side: "dark_oak_log.png", top: "dark_oak_log_top.png", bottom: "dark_oak_log_top.png" };
-    }
-    if (b.includes("stripped_oak")) {
-        return { side: "stripped_oak_log.png", top: "stripped_oak_log_top.png", bottom: "stripped_oak_log_top.png" };
-    }
-    if (b.includes("stripped_mangrove")) {
-        return { side: "stripped_mangrove_log.png", top: "stripped_mangrove_log_top.png", bottom: "stripped_mangrove_log_top.png" };
-    }
-    if (b.includes("sandstone")) {
-        return { side: "sandstone.png", top: "sandstone_top.png", bottom: "sandstone_bottom.png" };
-    }
-    if (b.includes("crafting_table")) {
-        return { side: "crafting_table_front.png", top: "crafting_table_top.png", bottom: "oak_planks.png" };
-    }
-    if (b.includes("furnace")) {
-        return { side: "furnace_side.png", top: "furnace_top.png", bottom: "furnace_top.png" };
-    }
-    if (b.includes("bookshelf")) {
-        return { side: "bookshelf.png", top: "oak_planks.png", bottom: "oak_planks.png" };
-    }
-    if (b.includes("tnt")) {
-        return { side: "tnt_side.png", top: "tnt_top.png", bottom: "tnt_bottom.png" };
+function getSideTextures(rawName) {
+    const raw = (rawName || "").toLowerCase();
+    const isWood = raw.includes("_wood") || raw.includes("_hyphae");
+    const isLog = raw.includes("_log") && !isWood;
+    const isAxisX = raw.includes("axis=x");
+    const isAxisZ = raw.includes("axis=z");
+
+    // 1. 6-sided bark blocks (stripped_mangrove_wood, oak_wood, etc. - NO rings)
+    if (isWood) {
+        let bark = "oak_log.png";
+        if (raw.includes("stripped_mangrove")) bark = "stripped_mangrove_log.png";
+        else if (raw.includes("stripped_oak")) bark = "stripped_oak_log.png";
+        else if (raw.includes("stripped_spruce")) bark = "stripped_spruce_log.png";
+        else if (raw.includes("mangrove")) bark = "stripped_mangrove_log.png";
+        else if (raw.includes("spruce")) bark = "spruce_log.png";
+        else if (raw.includes("birch")) bark = "birch_log.png";
+        else if (raw.includes("dark_oak")) bark = "dark_oak_log.png";
+        else if (raw.includes("acacia")) bark = "acacia_log.png";
+        return { right: bark, left: bark, top: bark, bottom: bark, front: bark, back: bark };
     }
 
-    const single = getTextureFileName(b);
-    return { side: single, top: single, bottom: single };
+    // 2. Logs with tree rings on axis ends
+    if (isLog) {
+        let bark = "oak_log.png";
+        let top = "oak_log_top.png";
+        if (raw.includes("stripped_mangrove")) { bark = "stripped_mangrove_log.png"; top = "stripped_mangrove_log_top.png"; }
+        else if (raw.includes("stripped_oak")) { bark = "stripped_oak_log.png"; top = "stripped_oak_log_top.png"; }
+        else if (raw.includes("spruce")) { bark = "spruce_log.png"; top = "spruce_log_top.png"; }
+        else if (raw.includes("birch")) { bark = "birch_log.png"; top = "birch_log_top.png"; }
+        else if (raw.includes("dark_oak")) { bark = "dark_oak_log.png"; top = "dark_oak_log_top.png"; }
+        else if (raw.includes("acacia")) { bark = "acacia_log.png"; top = "acacia_log_top.png"; }
+
+        if (isAxisX) {
+            // Horizontal East-West: rings on +X/-X
+            return { right: top, left: top, top: bark, bottom: bark, front: bark, back: bark };
+        } else if (isAxisZ) {
+            // Horizontal North-South: rings on +Z/-Z
+            return { right: bark, left: bark, top: bark, bottom: bark, front: top, back: top };
+        } else {
+            // Vertical Y-axis: rings on Top (+Y) and Bottom (-Y)
+            return { right: bark, left: bark, top: top, bottom: top, front: bark, back: bark };
+        }
+    }
+
+    // 3. Grass blocks
+    if (raw.includes("grass_block")) {
+        return {
+            right: "grass_block_side.png", left: "grass_block_side.png",
+            top: "grass_block_top.png", bottom: "dirt.png",
+            front: "grass_block_side.png", back: "grass_block_side.png"
+        };
+    }
+
+    // 4. Smooth Sandstone (clean on all 6 sides in vanilla, no bottom line)
+    if (raw.includes("smooth_sandstone")) {
+        return {
+            right: "sandstone_top.png", left: "sandstone_top.png",
+            top: "sandstone_top.png", bottom: "sandstone_top.png",
+            front: "sandstone_top.png", back: "sandstone_top.png"
+        };
+    }
+
+    // 5. Regular Sandstone (top smooth, bottom chiseled, sides textured)
+    if (raw.includes("sandstone")) {
+        return {
+            right: "sandstone.png", left: "sandstone.png",
+            top: "sandstone_top.png", bottom: "sandstone_bottom.png",
+            front: "sandstone.png", back: "sandstone.png"
+        };
+    }
+
+    // 6. Crafting Table
+    if (raw.includes("crafting_table")) {
+        return {
+            right: "crafting_table_front.png", left: "crafting_table_front.png",
+            top: "crafting_table_top.png", bottom: "oak_planks.png",
+            front: "crafting_table_front.png", back: "crafting_table_front.png"
+        };
+    }
+
+    // 7. Bookshelf
+    if (raw.includes("bookshelf")) {
+        return {
+            right: "bookshelf.png", left: "bookshelf.png",
+            top: "oak_planks.png", bottom: "oak_planks.png",
+            front: "bookshelf.png", back: "bookshelf.png"
+        };
+    }
+
+    // 8. TNT
+    if (raw.includes("tnt")) {
+        return {
+            right: "tnt_side.png", left: "tnt_side.png",
+            top: "tnt_top.png", bottom: "tnt_bottom.png",
+            front: "tnt_side.png", back: "tnt_side.png"
+        };
+    }
+
+    // Default uniform blocks
+    const s = getTextureFileName(raw);
+    return { right: s, left: s, top: s, bottom: s, front: s, back: s };
 }
 
-function getBlockMaterial(blockName, hexColorNum) {
-    const key = blockName + "_" + useTextures;
+function createPixelTexture(hexColor) {
+    const c = document.createElement("canvas");
+    c.width = 16;
+    c.height = 16;
+    const ctx = c.getContext("2d");
+
+    ctx.fillStyle = hexColor;
+    ctx.fillRect(0, 0, 16, 16);
+
+    for (let x = 0; x < 16; x++) {
+        for (let y = 0; y < 16; y++) {
+            const noise = (Math.random() - 0.5) * 22;
+            ctx.fillStyle = `rgba(${noise > 0 ? 255 : 0}, ${noise > 0 ? 255 : 0}, ${noise > 0 ? 255 : 0}, ${Math.abs(noise)/255})`;
+            ctx.fillRect(x, y, 1, 1);
+        }
+    }
+
+    ctx.fillStyle = "rgba(0,0,0,0.15)";
+    ctx.fillRect(0, 15, 16, 1);
+    ctx.fillRect(15, 0, 1, 16);
+    ctx.fillStyle = "rgba(255,255,255,0.15)";
+    ctx.fillRect(0, 0, 16, 1);
+    ctx.fillRect(0, 0, 1, 16);
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+}
+
+function getBlockMaterial(blockKey, hexColorNum, rawName) {
+    const key = blockKey + "_" + useTextures;
     if (materialCache[key]) return materialCache[key];
 
-    const isGlass = blockName.includes("glass");
-    const isLeaves = blockName.includes("leaf") || blockName.includes("leaves");
-    const isWater = blockName.includes("water");
+    const isGlass = blockKey.includes("glass");
+    const isLeaves = blockKey.includes("leaf") || blockKey.includes("leaves");
+    const isWater = blockKey.includes("water");
 
     if (!useTextures) {
         const mat = new THREE.MeshLambertMaterial({
@@ -1126,10 +1219,13 @@ function getBlockMaterial(blockName, hexColorNum) {
         return mat;
     }
 
-    const sides = getSideTextures(blockName);
+    const sides = getSideTextures(rawName || blockKey);
+    const rightTex = loadMinecraftTexture(sides.right);
+    const leftTex = loadMinecraftTexture(sides.left);
     const topTex = loadMinecraftTexture(sides.top);
     const bottomTex = loadMinecraftTexture(sides.bottom);
-    const sideTex = loadMinecraftTexture(sides.side);
+    const frontTex = loadMinecraftTexture(sides.front);
+    const backTex = loadMinecraftTexture(sides.back);
 
     function createMat(tex) {
         return new THREE.MeshLambertMaterial({
@@ -1141,14 +1237,19 @@ function getBlockMaterial(blockName, hexColorNum) {
     }
 
     let resultMat;
-    if (sides.top === sides.side && sides.bottom === sides.side) {
-        resultMat = createMat(sideTex);
+    if (sides.top === sides.right && sides.bottom === sides.right && sides.front === sides.right) {
+        // Uniform 6-sided block (uses 1 single material instance)
+        resultMat = createMat(rightTex);
     } else {
-        const sMat = createMat(sideTex);
-        const tMat = createMat(topTex);
-        const bMat = createMat(bottomTex);
-        // Box face order: +X, -X, +Y, -Y, +Z, -Z
-        resultMat = [sMat, sMat, tMat, bMat, sMat, sMat];
+        // 6 distinct faces: Right(+X), Left(-X), Top(+Y), Bottom(-Y), Front(+Z), Back(-Z)
+        resultMat = [
+            createMat(rightTex),
+            createMat(leftTex),
+            createMat(topTex),
+            createMat(bottomTex),
+            createMat(frontTex),
+            createMat(backTex)
+        ];
     }
 
     materialCache[key] = resultMat;
@@ -1193,7 +1294,7 @@ function init3DViewer(data) {
     }
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0c10);
+    scene.background = new THREE.Color(0x0e1117);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     const maxDim = Math.max(data.width, data.height, data.length);
@@ -1210,43 +1311,45 @@ function init3DViewer(data) {
     controls.target.set(0, data.height / 2, 0);
     controls.update();
 
-    // Lighting matching Minecraft sunlight & ambient sky
-    const skyLight = new THREE.AmbientLight(0xffffff, 0.65);
+    // Natural lighting without white haze / overexposure
+    const skyLight = new THREE.AmbientLight(0xffffff, 0.45);
     scene.add(skyLight);
 
-    const sunLight = new THREE.DirectionalLight(0xfff8ee, 0.85);
-    sunLight.position.set(maxDim * 2, maxDim * 4, maxDim * 2);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 0.65);
+    sunLight.position.set(maxDim * 1.5, maxDim * 3, maxDim * 2);
     scene.add(sunLight);
 
-    const backLight = new THREE.DirectionalLight(0x7faaff, 0.35);
-    backLight.position.set(-maxDim * 2, maxDim * 2, -maxDim * 2);
-    scene.add(backLight);
+    const fillLight = new THREE.DirectionalLight(0x88aacc, 0.2);
+    fillLight.position.set(-maxDim * 2, maxDim, -maxDim * 2);
+    scene.add(fillLight);
 
     // Grid floor
-    const gridHelper = new THREE.GridHelper(Math.max(data.width, data.length) * 1.6, 20, 0x4db8ff, 0x1f2430);
+    const gridHelper = new THREE.GridHelper(Math.max(data.width, data.length) * 1.6, 20, 0x4db8ff, 0x222a38);
     gridHelper.position.y = -0.5;
     scene.add(gridHelper);
 
-    // Group voxels by blockName
+    // Group voxels by block signature (blockName + orientation)
     const voxels = data.voxels;
     const totalCount = voxels.length;
     const groups = {};
 
     for (let i = 0; i < totalCount; i++) {
         const v = voxels[i];
-        const bName = v.blockName || "stone";
-        if (!groups[bName]) groups[bName] = [];
-        groups[bName].push(v);
+        const raw = v.rawName || v.blockName || "stone";
+        const groupKey = raw;
+        if (!groups[groupKey]) groups[groupKey] = [];
+        groups[groupKey].push(v);
     }
 
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
     const dummy = new THREE.Object3D();
     const meshGroups = [];
 
-    for (const [bName, bVoxels] of Object.entries(groups)) {
-        const mat = getBlockMaterial(bName, bVoxels[0].color);
+    for (const [groupKey, bVoxels] of Object.entries(groups)) {
+        const first = bVoxels[0];
+        const mat = getBlockMaterial(groupKey, first.color, first.rawName);
         const mesh = new THREE.InstancedMesh(boxGeo, mat, bVoxels.length);
-        const { scale, offsetY } = getBlockScaleAndOffset(bName);
+        const { scale, offsetY } = getBlockScaleAndOffset(first.blockName || groupKey);
 
         for (let j = 0; j < bVoxels.length; j++) {
             const v = bVoxels[j];
@@ -1261,7 +1364,7 @@ function init3DViewer(data) {
         meshGroups.push({ mesh, voxels: bVoxels, scale, offsetY });
     }
 
-    document.getElementById("renderCountBadge").textContent = `Rendered: ${totalCount.toLocaleString()} blocks (${Object.keys(groups).length} authentic textures)`;
+    document.getElementById("renderCountBadge").textContent = `Rendered: ${totalCount.toLocaleString()} blocks (${Object.keys(groups).length} block types)`;
 
     // Slider setup
     const slider = document.getElementById("layerSlider");
