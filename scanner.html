@@ -468,7 +468,8 @@
                         <strong style="color: #fff; font-size: 1.1rem;">🕹️ Interactive 3D Voxel Viewer</strong>
                         <span style="color: #777; font-size: 0.85rem; margin-left: 8px;">(Left click: Rotate • Right click: Pan • Scroll: Zoom)</span>
                     </div>
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn-dark" style="padding: 5px 12px; font-size: 0.85rem; border-radius: 6px; border-color: #4db8ff; color: #4db8ff;" id="textureToggleBtn" onclick="toggleTextures()">🎮 Textures: ON</button>
                         <button class="btn-dark" style="padding: 5px 12px; font-size: 0.85rem; border-radius: 6px;" onclick="resetCamera()">Reset View</button>
                         <button class="btn-dark" style="padding: 5px 12px; font-size: 0.85rem; border-radius: 6px;" id="gridToggleBtn" onclick="toggleGrid()">Toggle Grid</button>
                     </div>
@@ -910,12 +911,14 @@ function parseSchematicNBT(nbtRoot, fileName) {
                     const clean = formatCleanName(rawName);
                     blockCounts[clean] = (blockCounts[clean] || 0) + 1;
 
+                    const cleanId = rawName.replace(/^minecraft:/i, "").replace(/\[.*\]$/, "");
                     voxels.push({
                         x: x - width / 2,
                         y: y,
                         z: z - length / 2,
                         layerY: y,
-                        color: getBlockColor(rawName)
+                        color: getBlockColor(rawName),
+                        blockName: cleanId
                     });
                 }
             }
@@ -956,7 +959,226 @@ function renderResults(data) {
 }
 
 // =========================================================
-// 3D VOXEL VIEWER (THREE.JS INSTANCEDMESH)
+// MINECRAFT TEXTURE ENGINE (AUTHENTIC IN-GAME 16x16 TEXTURES)
+// =========================================================
+const TEXTURE_CDN = "https://cdn.jsdelivr.net/gh/InventivetalentDev/minecraft-assets@1.20.4/assets/minecraft/textures/block/";
+const textureCache = {};
+const materialCache = {};
+let useTextures = true;
+
+const textureLoader = new THREE.TextureLoader();
+textureLoader.setCrossOrigin("anonymous");
+
+function loadMinecraftTexture(fileName) {
+    if (textureCache[fileName]) return textureCache[fileName];
+
+    const url = TEXTURE_CDN + fileName;
+    const tex = textureLoader.load(
+        url,
+        (t) => {
+            t.magFilter = THREE.NearestFilter;
+            t.minFilter = THREE.NearestFilter;
+            t.generateMipmaps = false;
+            t.needsUpdate = true;
+        },
+        undefined,
+        () => {}
+    );
+
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+
+    textureCache[fileName] = tex;
+    return tex;
+}
+
+function getTextureFileName(blockName) {
+    const b = (blockName || "").toLowerCase();
+    if (b.includes("stone_brick")) return "stone_bricks.png";
+    if (b.includes("smooth_stone")) return "smooth_stone.png";
+    if (b.includes("mossy_cobblestone")) return "mossy_cobblestone.png";
+    if (b.includes("cobblestone")) return "cobblestone.png";
+    if (b.includes("polished_andesite")) return "polished_andesite.png";
+    if (b.includes("andesite")) return "andesite.png";
+    if (b.includes("polished_diorite")) return "polished_diorite.png";
+    if (b.includes("diorite")) return "diorite.png";
+    if (b.includes("polished_granite")) return "polished_granite.png";
+    if (b.includes("granite")) return "granite.png";
+    if (b.includes("deepslate_brick")) return "deepslate_bricks.png";
+    if (b.includes("polished_deepslate")) return "polished_deepslate.png";
+    if (b.includes("cobbled_deepslate")) return "cobbled_deepslate.png";
+    if (b.includes("deepslate")) return "deepslate.png";
+    if (b.includes("grass_block")) return "grass_block_top.png";
+    if (b.includes("dirt") || b.includes("podzol")) return "dirt.png";
+    if (b.includes("sandstone")) return "sandstone.png";
+    if (b.includes("sand")) return "sand.png";
+    if (b.includes("gravel")) return "gravel.png";
+    if (b.includes("oak_log")) return "oak_log.png";
+    if (b.includes("spruce_log")) return "spruce_log.png";
+    if (b.includes("birch_log")) return "birch_log.png";
+    if (b.includes("dark_oak_log")) return "dark_oak_log.png";
+    if (b.includes("acacia_log")) return "acacia_log.png";
+    if (b.includes("stripped_oak")) return "stripped_oak_log.png";
+    if (b.includes("stripped_spruce")) return "stripped_spruce_log.png";
+    if (b.includes("stripped_mangrove")) return "stripped_mangrove_log.png";
+    if (b.includes("oak_plank") || b.includes("plank")) return "oak_planks.png";
+    if (b.includes("spruce_plank")) return "spruce_planks.png";
+    if (b.includes("birch_plank")) return "birch_planks.png";
+    if (b.includes("dark_oak_plank")) return "dark_oak_planks.png";
+    if (b.includes("acacia_plank")) return "acacia_planks.png";
+    if (b.includes("leaf") || b.includes("leaves")) return "oak_leaves.png";
+    if (b.includes("glass")) return "glass.png";
+    if (b.includes("water")) return "water_still.png";
+    if (b.includes("lava")) return "lava_still.png";
+    if (b.includes("mud_brick")) return "mud_bricks.png";
+    if (b.includes("nether_brick")) return "nether_bricks.png";
+    if (b.includes("brick")) return "bricks.png";
+    if (b.includes("red_terracotta")) return "red_terracotta.png";
+    if (b.includes("white_terracotta")) return "white_terracotta.png";
+    if (b.includes("terracotta")) return "terracotta.png";
+    if (b.includes("concrete")) return "white_concrete.png";
+    if (b.includes("wool")) return "white_wool.png";
+    if (b.includes("coal_block")) return "coal_block.png";
+    if (b.includes("iron_block")) return "iron_block.png";
+    if (b.includes("gold_block")) return "gold_block.png";
+    if (b.includes("diamond_block")) return "diamond_block.png";
+    if (b.includes("emerald_block")) return "emerald_block.png";
+    if (b.includes("copper_block") || b.includes("cut_copper")) return "copper_block.png";
+    if (b.includes("redstone_block")) return "redstone_block.png";
+    if (b.includes("lapis_block")) return "lapis_block.png";
+    if (b.includes("quartz")) return "quartz_block_side.png";
+    if (b.includes("obsidian")) return "obsidian.png";
+    if (b.includes("sea_lantern")) return "sea_lantern.png";
+    if (b.includes("glowstone")) return "glowstone.png";
+    if (b.includes("prismarine")) return "prismarine.png";
+    if (b.includes("end_stone")) return "end_stone.png";
+    if (b.includes("purpur")) return "purpur_block.png";
+    if (b.includes("bookshelf")) return "bookshelf.png";
+    if (b.includes("crafting_table")) return "crafting_table_front.png";
+    if (b.includes("furnace")) return "furnace_front.png";
+    if (b.includes("tuff")) return "tuff.png";
+    if (b.includes("blackstone")) return "polished_blackstone.png";
+    return "stone.png";
+}
+
+function getSideTextures(blockName) {
+    const b = (blockName || "").toLowerCase();
+    if (b.includes("grass_block")) {
+        return { side: "grass_block_side.png", top: "grass_block_top.png", bottom: "dirt.png" };
+    }
+    if (b.includes("podzol")) {
+        return { side: "podzol_side.png", top: "podzol_top.png", bottom: "dirt.png" };
+    }
+    if (b.includes("oak_log")) {
+        return { side: "oak_log.png", top: "oak_log_top.png", bottom: "oak_log_top.png" };
+    }
+    if (b.includes("spruce_log")) {
+        return { side: "spruce_log.png", top: "spruce_log_top.png", bottom: "spruce_log_top.png" };
+    }
+    if (b.includes("birch_log")) {
+        return { side: "birch_log.png", top: "birch_log_top.png", bottom: "birch_log_top.png" };
+    }
+    if (b.includes("dark_oak_log")) {
+        return { side: "dark_oak_log.png", top: "dark_oak_log_top.png", bottom: "dark_oak_log_top.png" };
+    }
+    if (b.includes("stripped_oak")) {
+        return { side: "stripped_oak_log.png", top: "stripped_oak_log_top.png", bottom: "stripped_oak_log_top.png" };
+    }
+    if (b.includes("stripped_mangrove")) {
+        return { side: "stripped_mangrove_log.png", top: "stripped_mangrove_log_top.png", bottom: "stripped_mangrove_log_top.png" };
+    }
+    if (b.includes("sandstone")) {
+        return { side: "sandstone.png", top: "sandstone_top.png", bottom: "sandstone_bottom.png" };
+    }
+    if (b.includes("crafting_table")) {
+        return { side: "crafting_table_front.png", top: "crafting_table_top.png", bottom: "oak_planks.png" };
+    }
+    if (b.includes("furnace")) {
+        return { side: "furnace_side.png", top: "furnace_top.png", bottom: "furnace_top.png" };
+    }
+    if (b.includes("bookshelf")) {
+        return { side: "bookshelf.png", top: "oak_planks.png", bottom: "oak_planks.png" };
+    }
+    if (b.includes("tnt")) {
+        return { side: "tnt_side.png", top: "tnt_top.png", bottom: "tnt_bottom.png" };
+    }
+
+    const single = getTextureFileName(b);
+    return { side: single, top: single, bottom: single };
+}
+
+function getBlockMaterial(blockName, hexColorNum) {
+    const key = blockName + "_" + useTextures;
+    if (materialCache[key]) return materialCache[key];
+
+    const isGlass = blockName.includes("glass");
+    const isLeaves = blockName.includes("leaf") || blockName.includes("leaves");
+    const isWater = blockName.includes("water");
+
+    if (!useTextures) {
+        const mat = new THREE.MeshLambertMaterial({
+            color: hexColorNum,
+            transparent: isGlass || isWater,
+            opacity: isWater ? 0.7 : (isGlass ? 0.75 : 1.0)
+        });
+        materialCache[key] = mat;
+        return mat;
+    }
+
+    const sides = getSideTextures(blockName);
+    const topTex = loadMinecraftTexture(sides.top);
+    const bottomTex = loadMinecraftTexture(sides.bottom);
+    const sideTex = loadMinecraftTexture(sides.side);
+
+    function createMat(tex) {
+        return new THREE.MeshLambertMaterial({
+            map: tex,
+            transparent: isGlass || isWater || isLeaves,
+            opacity: isWater ? 0.75 : (isGlass ? 0.8 : 1.0),
+            alphaTest: isLeaves ? 0.45 : (isGlass ? 0.1 : 0)
+        });
+    }
+
+    let resultMat;
+    if (sides.top === sides.side && sides.bottom === sides.side) {
+        resultMat = createMat(sideTex);
+    } else {
+        const sMat = createMat(sideTex);
+        const tMat = createMat(topTex);
+        const bMat = createMat(bottomTex);
+        // Box face order: +X, -X, +Y, -Y, +Z, -Z
+        resultMat = [sMat, sMat, tMat, bMat, sMat, sMat];
+    }
+
+    materialCache[key] = resultMat;
+    return resultMat;
+}
+
+function getBlockScaleAndOffset(bName) {
+    const b = (bName || "").toLowerCase();
+    if (b.includes("slab")) return { scale: [1, 0.5, 1], offsetY: -0.25 };
+    if (b.includes("carpet")) return { scale: [1, 0.1, 1], offsetY: -0.45 };
+    if (b.includes("trapdoor")) return { scale: [1, 0.18, 1], offsetY: -0.41 };
+    if (b.includes("pane") || b.includes("iron_bars")) return { scale: [1, 1, 0.2], offsetY: 0 };
+    if (b.includes("fence") || b.includes("wall")) return { scale: [0.65, 1, 0.65], offsetY: 0 };
+    if (b.includes("lantern") || b.includes("torch")) return { scale: [0.35, 0.6, 0.35], offsetY: -0.2 };
+    return { scale: [1, 1, 1], offsetY: 0 };
+}
+
+function toggleTextures() {
+    useTextures = !useTextures;
+    const btn = document.getElementById("textureToggleBtn");
+    btn.textContent = useTextures ? "🎮 Textures: ON" : "🎨 Textures: OFF (Colors)";
+    btn.style.color = useTextures ? "#4db8ff" : "#aaa";
+    btn.style.borderColor = useTextures ? "#4db8ff" : "#444";
+    if (threeApp && threeApp.data) {
+        init3DViewer(threeApp.data);
+    }
+}
+
+// =========================================================
+// 3D VOXEL VIEWER (TEXTURED INSTANCEDMESHES)
 // =========================================================
 function init3DViewer(data) {
     const container = document.getElementById("canvas3dContainer");
@@ -971,7 +1193,7 @@ function init3DViewer(data) {
     }
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0e0e0e);
+    scene.background = new THREE.Color(0x0a0c10);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     const maxDim = Math.max(data.width, data.height, data.length);
@@ -980,6 +1202,7 @@ function init3DViewer(data) {
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -987,49 +1210,58 @@ function init3DViewer(data) {
     controls.target.set(0, data.height / 2, 0);
     controls.update();
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-    scene.add(ambientLight);
+    // Lighting matching Minecraft sunlight & ambient sky
+    const skyLight = new THREE.AmbientLight(0xffffff, 0.65);
+    scene.add(skyLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.7);
-    dirLight1.position.set(50, 100, 50);
-    scene.add(dirLight1);
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, 0.85);
+    sunLight.position.set(maxDim * 2, maxDim * 4, maxDim * 2);
+    scene.add(sunLight);
 
-    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
-    dirLight2.position.set(-50, 50, -50);
-    scene.add(dirLight2);
+    const backLight = new THREE.DirectionalLight(0x7faaff, 0.35);
+    backLight.position.set(-maxDim * 2, maxDim * 2, -maxDim * 2);
+    scene.add(backLight);
 
     // Grid floor
-    const gridHelper = new THREE.GridHelper(Math.max(data.width, data.length) * 1.5, 20, 0x4db8ff, 0x222222);
+    const gridHelper = new THREE.GridHelper(Math.max(data.width, data.length) * 1.6, 20, 0x4db8ff, 0x1f2430);
     gridHelper.position.y = -0.5;
     scene.add(gridHelper);
 
-    // Build InstancedMesh
+    // Group voxels by blockName
     const voxels = data.voxels;
     const totalCount = voxels.length;
-
-    const boxGeo = new THREE.BoxGeometry(0.96, 0.96, 0.96);
-    const boxMat = new THREE.MeshLambertMaterial();
-    const instancedMesh = new THREE.InstancedMesh(boxGeo, boxMat, Math.max(1, totalCount));
-
-    const dummy = new THREE.Object3D();
-    const tempColor = new THREE.Color();
+    const groups = {};
 
     for (let i = 0; i < totalCount; i++) {
         const v = voxels[i];
-        dummy.position.set(v.x, v.y, v.z);
-        dummy.updateMatrix();
-        instancedMesh.setMatrixAt(i, dummy.matrix);
-
-        tempColor.setHex(v.color);
-        instancedMesh.setColorAt(i, tempColor);
+        const bName = v.blockName || "stone";
+        if (!groups[bName]) groups[bName] = [];
+        groups[bName].push(v);
     }
 
-    instancedMesh.instanceMatrix.needsUpdate = true;
-    if (instancedMesh.instanceColor) instancedMesh.instanceColor.needsUpdate = true;
-    scene.add(instancedMesh);
+    const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+    const dummy = new THREE.Object3D();
+    const meshGroups = [];
 
-    document.getElementById("renderCountBadge").textContent = `Rendered: ${totalCount.toLocaleString()} voxels`;
+    for (const [bName, bVoxels] of Object.entries(groups)) {
+        const mat = getBlockMaterial(bName, bVoxels[0].color);
+        const mesh = new THREE.InstancedMesh(boxGeo, mat, bVoxels.length);
+        const { scale, offsetY } = getBlockScaleAndOffset(bName);
+
+        for (let j = 0; j < bVoxels.length; j++) {
+            const v = bVoxels[j];
+            dummy.position.set(v.x, v.y + offsetY, v.z);
+            dummy.scale.set(scale[0], scale[1], scale[2]);
+            dummy.updateMatrix();
+            mesh.setMatrixAt(j, dummy.matrix);
+        }
+
+        mesh.instanceMatrix.needsUpdate = true;
+        scene.add(mesh);
+        meshGroups.push({ mesh, voxels: bVoxels, scale, offsetY });
+    }
+
+    document.getElementById("renderCountBadge").textContent = `Rendered: ${totalCount.toLocaleString()} blocks (${Object.keys(groups).length} authentic textures)`;
 
     // Slider setup
     const slider = document.getElementById("layerSlider");
@@ -1041,18 +1273,20 @@ function init3DViewer(data) {
         const maxLayer = parseInt(e.target.value);
         document.getElementById("layerLabel").textContent = `1 to ${maxLayer}`;
 
-        for (let i = 0; i < totalCount; i++) {
-            const v = voxels[i];
-            if (v.layerY < maxLayer) {
-                dummy.position.set(v.x, v.y, v.z);
-                dummy.scale.set(1, 1, 1);
-            } else {
-                dummy.scale.set(0, 0, 0);
+        for (const mg of meshGroups) {
+            for (let j = 0; j < mg.voxels.length; j++) {
+                const v = mg.voxels[j];
+                dummy.position.set(v.x, v.y + mg.offsetY, v.z);
+                if (v.layerY < maxLayer) {
+                    dummy.scale.set(mg.scale[0], mg.scale[1], mg.scale[2]);
+                } else {
+                    dummy.scale.set(0, 0, 0);
+                }
+                dummy.updateMatrix();
+                mg.mesh.setMatrixAt(j, dummy.matrix);
             }
-            dummy.updateMatrix();
-            instancedMesh.setMatrixAt(i, dummy.matrix);
+            mg.mesh.instanceMatrix.needsUpdate = true;
         }
-        instancedMesh.instanceMatrix.needsUpdate = true;
     };
 
     function animate() {
@@ -1062,7 +1296,7 @@ function init3DViewer(data) {
     }
 
     threeApp = {
-        scene, camera, renderer, controls, gridHelper, instancedMesh, maxDim, data
+        scene, camera, renderer, controls, gridHelper, maxDim, data, meshGroups
     };
 
     animate();
