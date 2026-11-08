@@ -11,7 +11,7 @@
     <script>
         const client = supabase.createClient(
             "https://pnkwqqapyoaxdcpubpwb.supabase.co",
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwbnB3cWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bkc"
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwbnB3cWFweW9heGRjcHVicHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDA3MzcsImV4cCI6MjEwNjcxNjczN30.HiM5-OSJUoJ_3AXSkfEmhgWVs8lU5lNNj4FbIai1Bk" + "c"
         );
     </script>
 </head>
@@ -29,6 +29,10 @@
 <div class="sidebar" id="sidebar">
 
     <h2 class="pixel">⛏️ Prosper</h2>
+
+    <div class="sidebar-section">
+        <a href="index.html" class="sidebar-home">🏠 Return to Home</a>
+    </div>
 
     <div class="sidebar-section">
         <h3 class="pixel-small">Account Info</h3>
@@ -65,9 +69,15 @@
 <div class="main-content">
     <h1 class="pixel">Dashboard</h1>
     <p class="pixel-small">Use the menu to manage your account.</p>
-    <a class="btn-red" href="index.html" style="display:inline-block; margin-top:20px; text-decoration:none;">
-        ← Back to Home
-    </a>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;">
+        <a class="btn-red" href="index.html" style="display:inline-block; text-decoration:none;">
+            ← Back to Main Page
+        </a>
+        <button id="homeQuickBtn" class="btn-red" style="display:inline-block; border:none; cursor:pointer;">
+            🏠 Home
+        </button>
+    </div>
 </div>
 
 <script>
@@ -110,6 +120,12 @@
     }
 
     loadDashboard();
+
+    function goHome() {
+        window.location.href = "index.html";
+    }
+
+    document.getElementById("homeQuickBtn").addEventListener("click", goHome);
 
     // UUID preview
     document.getElementById("mcUUID").addEventListener("input", () => {
