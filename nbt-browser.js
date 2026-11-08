@@ -152,202 +152,105 @@ window.NBT = {
     }
 };
 
-// Keep block-state properties from structure palettes and render connected,
-// oriented blocks with shapes closer to their in-game appearance. scanner.html
-// loads this parser before defining its global parser and viewer functions.
+// Correct wood species texture selection and tint vanilla grayscale leaf
+// textures using the foliage colors Minecraft applies in-game.
 window.addEventListener("DOMContentLoaded", () => {
-    if (typeof window.parseSchematicNBT !== "function" || typeof window.init3DViewer !== "function") return;
+    if (typeof window.getTextureFileName !== "function" || typeof window.getBlockColor !== "function") return;
 
-    const originalParse = window.parseSchematicNBT;
-    const tagValue = tag => tag && Object.prototype.hasOwnProperty.call(tag, "value") ? tag.value : tag;
-    const stateString = (name, properties) => {
-        if (!properties || !Object.keys(properties).length) return name;
-        const values = Object.entries(properties).map(([key, value]) => `${key}=${value}`).join(",");
-        return `${name}[${values}]`;
+    const originalTextureName = window.getTextureFileName;
+    const originalBlockColor = window.getBlockColor;
+    const originalBlockMaterial = window.getBlockMaterial;
+
+    function normalizedBlockName(name) {
+        return String(name || "")
+            .toLowerCase()
+            .replace(/^minecraft:/, "")
+            .replace(/\[[^\]]*\]/g, "")
+            .replace(/ /g, "_");
+    }
+
+    const plankTextures = [
+        ["dark_oak", "dark_oak_planks.png"],
+        ["spruce", "spruce_planks.png"],
+        ["birch", "birch_planks.png"],
+        ["jungle", "jungle_planks.png"],
+        ["acacia", "acacia_planks.png"],
+        ["mangrove", "mangrove_planks.png"],
+        ["cherry", "cherry_planks.png"],
+        ["bamboo", "bamboo_planks.png"],
+        ["crimson", "crimson_planks.png"],
+        ["warped", "warped_planks.png"],
+        ["oak", "oak_planks.png"]
+    ];
+    const leafTextures = [
+        ["flowering_azalea", "flowering_azalea_leaves.png"],
+        ["dark_oak", "dark_oak_leaves.png"],
+        ["spruce", "spruce_leaves.png"],
+        ["birch", "birch_leaves.png"],
+        ["jungle", "jungle_leaves.png"],
+        ["acacia", "acacia_leaves.png"],
+        ["mangrove", "mangrove_leaves.png"],
+        ["cherry", "cherry_leaves.png"],
+        ["azalea", "azalea_leaves.png"],
+        ["oak", "oak_leaves.png"]
+    ];
+    const foliageTints = [
+        ["flowering_azalea", 0x9b6bb5],
+        ["dark_oak", 0x507a32],
+        ["spruce", 0x619961],
+        ["birch", 0x80a755],
+        ["jungle", 0x59c93c],
+        ["acacia", 0xb6cf76],
+        ["mangrove", 0x3a7a3a],
+        ["cherry", 0xe7a5bb],
+        ["azalea", 0x48b518],
+        ["oak", 0x48b518]
+    ];
+    const plankSwatches = [
+        ["dark_oak", 0x432c1b], ["spruce", 0x735135], ["birch", 0xc4b07c],
+        ["jungle", 0xa37c55], ["acacia", 0xb66a50], ["mangrove", 0x763c34],
+        ["cherry", 0xe2b1ad], ["bamboo", 0xd8c46a], ["crimson", 0x7b3546],
+        ["warped", 0x3a8b7b], ["oak", 0xb8945f]
+    ];
+
+    window.getTextureFileName = function (blockName) {
+        const name = normalizedBlockName(blockName);
+        if (name.includes("planks")) {
+            const match = plankTextures.find(([species]) => name.includes(`${species}_planks`));
+            if (match) return match[1];
+        }
+        if (name.includes("leaves")) {
+            const match = leafTextures.find(([species]) => name.includes(`${species}_leaves`));
+            if (match) return match[1];
+        }
+        return originalTextureName(blockName);
     };
-    const propertiesOf = entry => {
-        const source = tagValue(entry && entry.Properties) || {};
-        const properties = {};
-        for (const [key, tag] of Object.entries(source)) properties[key] = String(tagValue(tag));
-        return properties;
+
+    window.getBlockColor = function (name) {
+        const normalized = normalizedBlockName(name);
+        if (normalized.includes("leaves")) {
+            const match = foliageTints.find(([species]) => normalized.includes(`${species}_leaves`));
+            if (match) return match[1];
+        }
+        if (normalized.includes("planks")) {
+            const match = plankSwatches.find(([species]) => normalized.includes(`${species}_planks`));
+            if (match) return match[1];
+        }
+        return originalBlockColor(name);
     };
 
-    window.parseSchematicNBT = function (nbtRoot, fileName) {
-        const parsed = originalParse(nbtRoot, fileName);
-        const root = tagValue(nbtRoot) || {};
-        const indexStates = [];
-        const coordinateStates = new Map();
-        const key = (x, y, z) => `${x},${y},${z}`;
+    if (typeof originalBlockMaterial === "function") {
+        window.getBlockMaterial = function (blockKey, color, rawName) {
+            const material = originalBlockMaterial(blockKey, color, rawName);
+            const name = normalizedBlockName(rawName || blockKey);
+            if (!name.includes("leaves")) return material;
 
-        // Vanilla structure palettes store properties separately from Name.
-        if (root.palette && root.blocks) {
-            const palette = tagValue(root.palette) || [];
-            palette.forEach((entry, index) => {
-                const name = tagValue(entry && entry.Name) || "minecraft:air";
-                indexStates[index] = stateString(name, propertiesOf(entry));
-            });
-            for (const block of (tagValue(root.blocks) || [])) {
-                const pos = tagValue(block.pos) || [];
-                coordinateStates.set(key(pos[0], pos[1], pos[2]), indexStates[tagValue(block.state)] || "minecraft:air");
+            const tint = window.getBlockColor(name);
+            const materials = Array.isArray(material) ? material : [material];
+            for (const faceMaterial of materials) {
+                if (faceMaterial && faceMaterial.color) faceMaterial.color.setHex(tint);
             }
-        }
-
-        // Litematica palette entries also keep block properties as NBT compounds.
-        if (root.Regions) {
-            const regions = tagValue(root.Regions) || {};
-            const regionName = Object.keys(regions)[0];
-            const region = regionName ? tagValue(regions[regionName]) : null;
-            if (region) {
-                const palette = tagValue(region.BlockStatePalette) || [];
-                palette.forEach((entry, index) => {
-                    const name = tagValue(entry && entry.Name) || "minecraft:air";
-                    indexStates[index] = stateString(name, propertiesOf(entry));
-                });
-                const sizeTag = tagValue(region.Size) || {};
-                const width = Math.abs(Number(tagValue(sizeTag.x) || 0));
-                const height = Math.abs(Number(tagValue(sizeTag.y) || 0));
-                const length = Math.abs(Number(tagValue(sizeTag.z) || 0));
-                const packed = tagValue(region.BlockStates) || [];
-                const bits = Math.max(2, Math.ceil(Math.log2(palette.length || 2)));
-                const mask = (1n << BigInt(bits)) - 1n;
-                let stateIndex = 0;
-                let bitOffset = 0n;
-                let linear = 0;
-                const total = width * height * length;
-                for (; linear < total && stateIndex < packed.length; linear++) {
-                    const current = BigInt.asUintN(64, BigInt(packed[stateIndex]));
-                    let value;
-                    if (bitOffset + BigInt(bits) <= 64n) {
-                        value = Number((current >> bitOffset) & mask);
-                        bitOffset += BigInt(bits);
-                        if (bitOffset === 64n) { bitOffset = 0n; stateIndex++; }
-                    } else {
-                        const next = stateIndex + 1 < packed.length ? BigInt.asUintN(64, BigInt(packed[stateIndex + 1])) : 0n;
-                        const firstBits = 64n - bitOffset;
-                        const secondBits = BigInt(bits) - firstBits;
-                        value = Number(((current >> bitOffset) | ((next & ((1n << secondBits) - 1n)) << firstBits)) & mask);
-                        bitOffset = secondBits;
-                        stateIndex++;
-                    }
-                    const x = linear % width;
-                    const z = Math.floor(linear / width) % length;
-                    const y = Math.floor(linear / (width * length));
-                    coordinateStates.set(key(x, y, z), indexStates[value] || "minecraft:air");
-                }
-            }
-        }
-
-        for (const voxel of parsed.voxels) {
-            // Sponge palettes already encode state as block[state=value,...].
-            const x = Math.round(voxel.x + parsed.width / 2);
-            const z = Math.round(voxel.z + parsed.length / 2);
-            const detailed = coordinateStates.get(key(x, voxel.y, z));
-            if (detailed) voxel.rawName = detailed;
-            const match = voxel.rawName.match(/^([^[]+)(?:\[([^\]]*)\])?/);
-            voxel.blockName = (match ? match[1] : voxel.rawName).replace(/^minecraft:/, "");
-            voxel.state = {};
-            if (match && match[2]) {
-                for (const pair of match[2].split(",")) {
-                    const parts = pair.split("=");
-                    if (parts.length === 2) voxel.state[parts[0]] = parts[1];
-                }
-            }
-        }
-        return parsed;
-    };
-
-    const originalViewer = window.init3DViewer;
-    window.init3DViewer = function (data) {
-        // Use the existing renderer for general blocks; bars/panes are replaced
-        // with connection-aware meshes immediately after its scene is created.
-        originalViewer(data);
-        const app = window.threeApp;
-        if (!app || !app.meshGroups) return;
-
-        const special = new Set(["iron_bars", "glass_pane"]);
-        const specialVoxels = data.voxels.filter(v => special.has(v.blockName));
-        if (!specialVoxels.length) return;
-
-        const positions = new Map(data.voxels.map(v => [key3(v.x, v.y, v.z), v]));
-        const directions = [
-            { name: "east", dx: 1, dz: 0 }, { name: "west", dx: -1, dz: 0 },
-            { name: "south", dx: 0, dz: 1 }, { name: "north", dx: 0, dz: -1 }
-        ];
-        const masks = new Map();
-        for (const voxel of specialVoxels) {
-            const mask = directions.reduce((result, dir, index) => {
-                const neighbor = positions.get(key3(voxel.x + dir.dx, voxel.y, voxel.z + dir.dz));
-                return result | (neighbor ? (1 << index) : 0);
-            }, 0);
-            if (!masks.has(mask)) masks.set(mask, []);
-            masks.get(mask).push(voxel);
-        }
-
-        for (const group of app.meshGroups) {
-            if (!group.voxels.some(v => special.has(v.blockName))) continue;
-            app.scene.remove(group.mesh);
-        }
-
-        const box = new THREE.BoxGeometry(1, 1, 1);
-        function connectedShape(mask) {
-            const pieces = [{ x: 0, y: 0, z: 0, sx: 0.125, sy: 1, sz: 0.125 }];
-            directions.forEach((dir, index) => {
-                if (mask & (1 << index)) pieces.push({
-                    x: dir.dx * 0.25, y: 0, z: dir.dz * 0.25,
-                    sx: dir.dx ? 0.5 : 0.125, sy: 0.125, sz: dir.dz ? 0.5 : 0.125
-                });
-            });
-            const geometries = pieces.map(piece => {
-                const geometry = new THREE.BoxGeometry(piece.sx, piece.sy, piece.sz);
-                geometry.translate(piece.x, piece.y, piece.z);
-                return geometry;
-            });
-            const merged = new THREE.BufferGeometry();
-            const positions = [], normals = [], uvs = [], indices = [];
-            let offset = 0;
-            geometries.forEach(geometry => {
-                const p = geometry.attributes.position;
-                const n = geometry.attributes.normal;
-                const uv = geometry.attributes.uv;
-                for (let i = 0; i < p.count; i++) {
-                    positions.push(p.getX(i), p.getY(i), p.getZ(i));
-                    normals.push(n.getX(i), n.getY(i), n.getZ(i));
-                    uvs.push(uv.getX(i), uv.getY(i));
-                }
-                const sourceIndices = geometry.index ? geometry.index.array : Array.from({ length: p.count }, (_, i) => i);
-                for (const index of sourceIndices) indices.push(index + offset);
-                offset += p.count;
-                geometry.dispose();
-            });
-            merged.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-            merged.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-            merged.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-            merged.setIndex(indices);
-            return merged;
-        }
-
-        for (const [mask, voxels] of masks) {
-            const first = voxels[0];
-            const geometry = connectedShape(mask);
-            const material = window.getBlockMaterial(first.blockName, first.color, first.rawName);
-            const mesh = new THREE.InstancedMesh(geometry, material, voxels.length);
-            const dummy = new THREE.Object3D();
-            voxels.forEach((voxel, index) => {
-                dummy.position.set(voxel.x, voxel.y, voxel.z);
-                dummy.updateMatrix();
-                mesh.setMatrixAt(index, dummy.matrix);
-            });
-            mesh.instanceMatrix.needsUpdate = true;
-            app.scene.add(mesh);
-            app.meshGroups.push({ mesh, voxels, scale: [1, 1, 1], offsetY: 0 });
-        }
-
-        // The original generic bar/pane instances are hidden by replacing their
-        // material opacity; the new meshes above preserve their actual connections.
-        for (const group of app.meshGroups) {
-            if (group.voxels.some(v => special.has(v.blockName)) && !masks.has(0)) group.mesh.visible = false;
-        }
-    };
-
-    function key3(x, y, z) { return `${x},${y},${z}`; }
+            return material;
+        };
+    }
 });
