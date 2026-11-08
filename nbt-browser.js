@@ -152,8 +152,8 @@ window.NBT = {
     }
 };
 
-// Correct wood species texture selection and tint vanilla grayscale leaf
-// textures using the foliage colors Minecraft applies in-game.
+// Give wooden families their species-specific block textures and tint vanilla
+// grayscale leaf textures to approximate Minecraft's biome-independent foliage.
 window.addEventListener("DOMContentLoaded", () => {
     if (typeof window.getTextureFileName !== "function" || typeof window.getBlockColor !== "function") return;
 
@@ -169,18 +169,20 @@ window.addEventListener("DOMContentLoaded", () => {
             .replace(/ /g, "_");
     }
 
-    const plankTextures = [
-        ["dark_oak", "dark_oak_planks.png"],
-        ["spruce", "spruce_planks.png"],
-        ["birch", "birch_planks.png"],
-        ["jungle", "jungle_planks.png"],
-        ["acacia", "acacia_planks.png"],
-        ["mangrove", "mangrove_planks.png"],
-        ["cherry", "cherry_planks.png"],
-        ["bamboo", "bamboo_planks.png"],
-        ["crimson", "crimson_planks.png"],
-        ["warped", "warped_planks.png"],
-        ["oak", "oak_planks.png"]
+    // Most wooden utility blocks reuse their species' plank texture in vanilla.
+    // Match specific species before oak so dark_oak isn't mistaken for oak.
+    const woodFamilies = [
+        ["dark_oak", "dark_oak_planks.png", 0x432c1b],
+        ["spruce", "spruce_planks.png", 0x735135],
+        ["birch", "birch_planks.png", 0xc4b07c],
+        ["jungle", "jungle_planks.png", 0xa37c55],
+        ["acacia", "acacia_planks.png", 0xb66a50],
+        ["mangrove", "mangrove_planks.png", 0x763c34],
+        ["cherry", "cherry_planks.png", 0xe2b1ad],
+        ["bamboo", "bamboo_planks.png", 0xd8c46a],
+        ["crimson", "crimson_planks.png", 0x7b3546],
+        ["warped", "warped_planks.png", 0x3a8b7b],
+        ["oak", "oak_planks.png", 0xb8945f]
     ];
     const leafTextures = [
         ["flowering_azalea", "flowering_azalea_leaves.png"],
@@ -206,22 +208,29 @@ window.addEventListener("DOMContentLoaded", () => {
         ["azalea", 0x48b518],
         ["oak", 0x48b518]
     ];
-    const plankSwatches = [
-        ["dark_oak", 0x432c1b], ["spruce", 0x735135], ["birch", 0xc4b07c],
-        ["jungle", 0xa37c55], ["acacia", 0xb66a50], ["mangrove", 0x763c34],
-        ["cherry", 0xe2b1ad], ["bamboo", 0xd8c46a], ["crimson", 0x7b3546],
-        ["warped", 0x3a8b7b], ["oak", 0xb8945f]
-    ];
+
+    function getWoodFamily(name) {
+        return woodFamilies.find(([species]) => name.includes(`${species}_`));
+    }
+
+    function isWoodenShape(name) {
+        return /(?:^|_)(?:fence|fence_gate|slab|stairs)(?:_|$)/.test(name) ||
+            /(?:^|_)(?:door|trapdoor|button|pressure_plate)(?:_|$)/.test(name);
+    }
 
     window.getTextureFileName = function (blockName) {
         const name = normalizedBlockName(blockName);
         if (name.includes("planks")) {
-            const match = plankTextures.find(([species]) => name.includes(`${species}_planks`));
-            if (match) return match[1];
+            const family = getWoodFamily(name);
+            if (family) return family[1];
         }
         if (name.includes("leaves")) {
             const match = leafTextures.find(([species]) => name.includes(`${species}_leaves`));
             if (match) return match[1];
+        }
+        if (isWoodenShape(name)) {
+            const family = getWoodFamily(name);
+            if (family) return family[1];
         }
         return originalTextureName(blockName);
     };
@@ -232,9 +241,9 @@ window.addEventListener("DOMContentLoaded", () => {
             const match = foliageTints.find(([species]) => normalized.includes(`${species}_leaves`));
             if (match) return match[1];
         }
-        if (normalized.includes("planks")) {
-            const match = plankSwatches.find(([species]) => normalized.includes(`${species}_planks`));
-            if (match) return match[1];
+        if (normalized.includes("planks") || isWoodenShape(normalized)) {
+            const family = getWoodFamily(normalized);
+            if (family) return family[2];
         }
         return originalBlockColor(name);
     };
